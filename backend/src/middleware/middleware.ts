@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from "express"
 import { IUser } from "../types/user.types";
 import { verifyToken } from "../utils/token.utils"
+import rateLimit from "express-rate-limit" // Yeni eklendi
 import User from "../models/User"
 import mongoose from "mongoose";
 
@@ -51,3 +52,57 @@ export const studentOnly = async (req: Request, res: Response, next: NextFunctio
     }
 
 }
+
+// ─── 2. GÜVENLİK ──────────────────────────────────
+
+export const ipResolver = (req: Request, res: Response, next: NextFunction) => {
+    const cfIp = req.headers['cf-connecting-ip'] as string;
+    const forwardedFor = req.headers['x-forwarded-for'] as string;
+    const realIp = req.headers['x-real-ip'] as string;
+
+    let ip = cfIp || forwardedFor || realIp || req.socket.remoteAddress || req.ip;
+
+    if (ip && ip.includes(',')) {
+        ip = ip.split(',')[0].trim();
+    }
+
+    res.locals.clientIp = ip || "Bilinmiyor";
+    next();
+};
+
+// ─── 3. GÜVENLİK: RATE LIMITER'LAR (YENİ EKLENDİ) ───────────────────────────
+
+const keyGenerator = (req: Request, res: Response) => {
+    // Kendi IP çözücümüzü kullanıyoruz
+    return res.locals.clientIp as string;
+};
+
+// Tüm uygulama geneli için varsayılan limit
+export const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 dakika
+    max: 200,
+    message: { error: "Çok fazla istekte bulundunuz, lütfen daha sonra tekrar deneyin.  ," },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator
+});
+
+// Hassas Auth işlemleri için katı limit (Login, Register, Email Gönderimi vb.)
+export const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 dakika
+    max: 10, // Max 10 deneme
+    message: { error: "Çok fazla başarısız deneme yaptınız. Lütfen 15 dakika bekleyin." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator
+});
+
+// Mesajlaşma ekranındaki sürekli fetch işlemleri için daha toleranslı limit
+export const messagingLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 dakika
+    max: 120, // Dakikada 120 istek (saniyede 2)
+    message: { error: "Mesajlar çok hızlı güncelleniyor, lütfen anlık yavaşlayın." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator
+});
