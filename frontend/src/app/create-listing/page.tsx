@@ -94,12 +94,14 @@ export default function CreateListingWizard() {
     const [currentFeatureValue, setCurrentFeatureValue] = useState('');
     const [customFeatureKeyInput, setCustomFeatureKeyInput] = useState('');
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     useEffect(() => {
         const checkAuth = async () => {
             const token = localStorage.getItem('accessToken');
             if (!token) return;
             try {
-                const userRes = await fetch('http://localhost:5000/api/auth/me', {
+                const userRes = await fetch(`${API_URL}/api/auth/me`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                 });
@@ -129,7 +131,7 @@ export default function CreateListingWizard() {
 
                 const formattedCityId = parseInt(selectedCityId, 10).toString();
 
-                const res = await fetch(`http://localhost:5000/api/misc/districts/${formattedCityId}`, {
+                const res = await fetch(`${API_URL}/api/misc/districts/${formattedCityId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -284,7 +286,7 @@ export default function CreateListingWizard() {
 
             mediaFiles.forEach(file => { submitData.append('photos', file); });
 
-            const response = await fetch('http://localhost:5000/api/listing', {
+            const response = await fetch(`${API_URL}/api/listing`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: submitData

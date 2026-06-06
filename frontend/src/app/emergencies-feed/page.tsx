@@ -25,6 +25,8 @@ export default function EmergenciesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     // Fetch active emergencies from the backend
     useEffect(() => {
         const fetchEmergencies = async () => {
@@ -38,7 +40,7 @@ export default function EmergenciesPage() {
                     return;
                 }
 
-                const API_URL = "http://localhost:5000/api/listing?is_urgent=true";
+                const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://universe-1-vdkr.onrender.com'}/api/listing?is_urgent=true`;
 
                 const response = await fetch(API_URL, {
                     method: 'GET',

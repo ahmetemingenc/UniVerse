@@ -23,7 +23,7 @@ export default function Navbar() {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLDivElement>(null);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     const checkAuth = () => {
         const token = localStorage.getItem('accessToken');

@@ -16,6 +16,8 @@ export default function ForgotPasswordPage() {
     const [code, setCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     const safeParse = async (response: Response) => {
         const text = await response.text();
         try {
@@ -38,7 +40,7 @@ export default function ForgotPasswordPage() {
         setError(null);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+            const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ usernameOrEmail: identifier })
@@ -68,7 +70,7 @@ export default function ForgotPasswordPage() {
         setError(null);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/verify-reset-code', {
+            const response = await fetch(`${API_URL}/api/auth/verify-reset-code`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: identifier, code: code })
@@ -98,7 +100,7 @@ export default function ForgotPasswordPage() {
         setError(null);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+            const response = await fetch(`${API_URL}/api/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: identifier, code: code, password: newPassword })
