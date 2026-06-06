@@ -34,6 +34,8 @@ export default function ProfilePage() {
 
     const [newPassword, setNewPassword] = useState('');
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     // pull the users info
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -45,7 +47,8 @@ export default function ProfilePage() {
 
             try {
                 setPageLoading(true);
-                const userRes = await fetch('http://localhost:5000/api/auth/me', {
+                // 1. DÜZELTME: KULLANICI BİLGİLERİ İÇİN API_URL ENTEGRE EDİLDİ
+                const userRes = await fetch(`${API_URL}/api/auth/me`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -54,14 +57,14 @@ export default function ProfilePage() {
 
                 const currentProfile = userDataJson.user || userDataJson;
 
-                // date format correction
                 if (currentProfile.birthdate) {
                     currentProfile.birthdate = new Date(currentProfile.birthdate).toISOString().split('T')[0];
                 }
                 setUserData(currentProfile);
 
                 // pull the listings
-                const listingsRes = await fetch('http://localhost:5000/api/listing', {
+                // 2. DÜZELTME: İLANLARI ÇEKERKEN API_URL ENTEGRE EDİLDİ
+                const listingsRes = await fetch(`${API_URL}/api/listing`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -82,7 +85,7 @@ export default function ProfilePage() {
         };
 
         fetchInitialData();
-    }, [router]);
+    }, [router, API_URL]);
 
     // get favorites
     useEffect(() => {
@@ -91,7 +94,8 @@ export default function ProfilePage() {
                 const token = localStorage.getItem('accessToken');
                 try {
                     setTabLoading(true);
-                    const res = await fetch('http://localhost:5000/api/user/me/favorites', {
+                    // 3. DÜZELTME: FAVORİLERİ ÇEKERKEN API_URL ENTEGRE EDİLDİ
+                    const res = await fetch(`${API_URL}/api/user/me/favorites`, {
                         method: 'GET',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -105,7 +109,7 @@ export default function ProfilePage() {
             };
             fetchFavorites();
         }
-    }, [activeTab, userData]);
+    }, [activeTab, userData, API_URL]);
 
     useEffect(() => {
         if (toastMessage) {
@@ -120,7 +124,8 @@ export default function ProfilePage() {
         if (!itemToDelete) return;
         const token = localStorage.getItem('accessToken');
         try {
-            const response = await fetch(`http://localhost:5000/api/listing/${itemToDelete}`, {
+            // 4. DÜZELTME: İLAN SİLERKEN API_URL ENTEGRE EDİLDİ
+            const response = await fetch(`${API_URL}/api/listing/${itemToDelete}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -144,7 +149,8 @@ export default function ProfilePage() {
         if (!itemToEdit) return;
         const token = localStorage.getItem('accessToken');
         try {
-            const response = await fetch(`http://localhost:5000/api/listing/${itemToEdit._id}`, {
+            // 5. DÜZELTME: İLAN DÜZENLERKEN API_URL ENTEGRE EDİLDİ
+            const response = await fetch(`${API_URL}/api/listing/${itemToEdit._id}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -192,7 +198,8 @@ export default function ProfilePage() {
                 payload.password = newPassword;
             }
 
-            const response = await fetch('http://localhost:5000/api/user/me', {
+            // 6. DÜZELTME: PROFİL GÜNCELLERKEN API_URL ENTEGRE EDİLDİ
+            const response = await fetch(`${API_URL}/api/user/me`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -218,7 +225,8 @@ export default function ProfilePage() {
     const handleRemoveFavorite = async (listingId: string) => {
         const token = localStorage.getItem('accessToken');
         try {
-            const res = await fetch(`http://localhost:5000/api/user/me/favorites/${listingId}`, {
+            // 7. DÜZELTME: FAVORİLERDEN KALDIRIRKEN API_URL ENTEGRE EDİLDİ
+            const res = await fetch(`${API_URL}/api/user/me/favorites/${listingId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

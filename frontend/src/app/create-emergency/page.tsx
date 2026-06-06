@@ -18,6 +18,8 @@ export default function CreateEmergencyPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     // submit simulator
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

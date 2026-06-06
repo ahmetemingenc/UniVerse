@@ -56,6 +56,8 @@ export default function AdDetailPage() {
     const [commentError, setCommentError] = useState<string | null>(null);
     const [commentSuccess, setCommentSuccess] = useState<string | null>(null);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     useEffect(() => {
         const fetchAdDetailsFavoritesAndComments = async () => {
             if (!id) return;
@@ -70,7 +72,7 @@ export default function AdDetailPage() {
                 }
 
                 // fetch ad details
-                const adResponse = await fetch(`http://localhost:5000/api/listing/${id}`, {
+                const adResponse = await fetch(`${API_URL}/api/listing/${id}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -84,7 +86,7 @@ export default function AdDetailPage() {
 
                 // fetch favorites
                 try {
-                    const favResponse = await fetch('http://localhost:5000/api/user/me/favorites', {
+                    const favResponse = await fetch(`${API_URL}/api/user/me/favorites`, {
                         method: 'GET',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -97,7 +99,7 @@ export default function AdDetailPage() {
 
                 // fetch comments
                 try {
-                    const commentsRes = await fetch(`http://localhost:5000/api/comment/listing/${id}`, {
+                    const commentsRes = await fetch(`${API_URL}/api/comment/listing/${id}`, {
                         method: 'GET',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -116,7 +118,7 @@ export default function AdDetailPage() {
         };
 
         fetchAdDetailsFavoritesAndComments();
-    }, [id, router]);
+    }, [id, router, API_URL]);
 
     const handleStartChat = () => {
         const token = localStorage.getItem('accessToken');
@@ -136,7 +138,7 @@ export default function AdDetailPage() {
         setIsFavorite(!isFavorite);
 
         try {
-            const response = await fetch(`http://localhost:5000/api/user/me/favorites/${id}`, {
+            const response = await fetch(`${API_URL}/api/user/me/favorites/${id}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
             });
@@ -154,7 +156,7 @@ export default function AdDetailPage() {
         const sellerTargetId = ad.owner?._id || ad.owner || ad.seller?._id;
 
         try {
-            const response = await fetch('http://localhost:5000/api/comment/', {
+            const response = await fetch(`${API_URL}/api/comment/`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ listing: id, target: sellerTargetId, content: newComment, rating: rating })

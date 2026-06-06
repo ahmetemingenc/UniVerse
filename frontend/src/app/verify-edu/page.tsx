@@ -16,6 +16,8 @@ export default function VerifyEduPage() {
     const [eduEmail, setEduEmail] = useState('');
     const [code, setCode] = useState('');
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     // pull the users edu_mail address when the page opens
     useEffect(() => {
         const fetchUserData = async () => {
@@ -26,7 +28,7 @@ export default function VerifyEduPage() {
             }
 
             try {
-                const res = await fetch('http://localhost:5000/api/auth/me', {
+                const res = await fetch(`${API_URL}/api/auth/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();

@@ -54,7 +54,7 @@ function MessagesContent() {
     const [offerPrice, setOfferPrice] = useState<string>('');
     const [offerPricePer, setOfferPricePer] = useState<'One Time' | 'Per Month' | 'Per Session'>('One Time');
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     // fullscreen scroll lock for conversation page
     useEffect(() => {

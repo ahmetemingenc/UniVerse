@@ -28,6 +28,8 @@ export default function FeedPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     // Sorting states
     const [sortBy, setSortBy] = useState('newest');
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -71,23 +73,20 @@ export default function FeedPage() {
 
             const queryParams = new URLSearchParams();
 
-            let API_URL = 'http://localhost:5000/api/listing';
+            let url = `${API_URL}/api/listing`;
 
             // Parametreleri Ekle
             if (searchQuery) queryParams.append('q', searchQuery);
-
-            // Eğer kategori veya type seçildiyse (backend'in okuma mantığına göre tek string olarak)
             if (selectedCategories.length > 0) {
                 queryParams.append('type', selectedCategories.join(','));
             }
-
             if (minPrice) queryParams.append('min_price', minPrice);
             if (maxPrice) queryParams.append('max_price', maxPrice);
             queryParams.append('sort', sortBy);
 
-            API_URL = `${API_URL}?${queryParams.toString()}`;
+            const finalUrl = `${url}?${queryParams.toString()}`;
 
-            const response = await fetch(API_URL, {
+            const response = await fetch(finalUrl, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -100,12 +99,7 @@ export default function FeedPage() {
             try {
                 data = JSON.parse(text);
             } catch (e) {
-                let extractedError = "Bağlantı Hatası: HTML döndü.";
-                if (text.includes("Cannot GET")) {
-                    const match = text.match(/Cannot GET \/[a-zA-Z0-9/_-]+/);
-                    if (match) extractedError = match[0];
-                }
-                setError(`Sunucu Hatası: ${extractedError}`);
+                setError(`Sunucu yanıtı geçersiz (HTML döndü).`);
                 setAdverts([]);
                 setIsLoading(false);
                 return;
@@ -119,8 +113,6 @@ export default function FeedPage() {
             }
 
             const allListings = data.listings || [];
-
-            // FRONTEND GÜVENLİK FİLTRESİ: Acil ilanları GÖSTERME (!ad.is_urgent)
             const standardListings = allListings.filter((ad: Advert) => !ad.is_urgent);
 
             setAdverts(standardListings);

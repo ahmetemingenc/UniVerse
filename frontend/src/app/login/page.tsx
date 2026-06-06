@@ -15,6 +15,8 @@ export default function LoginPage() {
     const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -57,7 +59,7 @@ export default function LoginPage() {
         setSuccessMessage(null);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/login', {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)

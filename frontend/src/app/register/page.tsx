@@ -15,6 +15,8 @@ export default function RegisterPage() {
 
     const [tempToken, setTempToken] = useState<string | null>(null);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
@@ -58,7 +60,7 @@ export default function RegisterPage() {
         setError(null);
         setFieldErrors({});
         try {
-            const response = await fetch('http://localhost:5000/api/auth/sendVerification', {
+            const response = await fetch(`${API_URL}/api/auth/sendVerification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -84,7 +86,7 @@ export default function RegisterPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch('http://localhost:5000/api/auth/register', {
+            const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -126,7 +128,7 @@ export default function RegisterPage() {
             }
             if (formData.birthdate) payload.birthdate = new Date(formData.birthdate);
 
-            const response = await fetch('http://localhost:5000/api/auth/complete-profile', {
+            const response = await fetch(`${API_URL}/api/auth/complete-profile`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
