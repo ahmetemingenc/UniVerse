@@ -18,6 +18,8 @@ import express, { Request, Response } from "express"
 import mongoose from "mongoose"
 import cors from "cors"
 
+
+
 import authRouter from "./routes/auth.router"
 import testRouter from './routes/test.router';
 import userRouter from "./routes/user.router"
@@ -29,19 +31,24 @@ import offerRouter from "./routes/offer.router";
 import { startExpiredListingsCron } from "./cron/expiredListings.job";
 import {initSocket} from "./Socket/Socket";
 import {startMessageEmailCron} from "./cron/sendMessageEmail.job";
-
-
+import { ipResolver, globalLimiter } from "./middleware/middleware";
 
 const app = express()
 const httpServer = http.createServer(app)   // HTTP Server for Socket.io
 const PORT = process.env.PORT || 5000
 
 // ─── MIDDLEWARE ──────────────────────────────
+app.set("trust proxy", 1);
 app.use(express.json())
 app.use(cors({
     origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true
 }))
+
+// ─── RATE LIMITING & IP ──────────────────────
+// Sıralama çok kritik: Önce IP bulunur, sonra limit uygulanır
+app.use(ipResolver);
+app.use(globalLimiter);
 
 // ─── ROUTES ──────────────────────────────────
 
@@ -54,10 +61,6 @@ app.use('/api/comment', commendRouter);
 app.use("/api/user", userRouter);
 app.use("/api/messaging", messageRouter);
 app.use("/api/offer", offerRouter);
-
-
-// app.use("/api/auth", authRoutes)
-// app.use("/api/users", userRoutes)
 
 app.get("/", (req: Request, res: Response) => {
     res.json({ message: "UniVerse Backend API working" })
