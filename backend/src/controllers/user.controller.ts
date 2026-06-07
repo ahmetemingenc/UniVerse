@@ -3,6 +3,7 @@ import { z } from "zod"
 import bcrypt from "bcryptjs"
 import mongoose from "mongoose"
 import User from "../models/User"
+import { createActivityLog } from "../utils/logger.util";
 import { Listing } from "../models/Listing"
 import {
     updateUserSchema,
@@ -66,6 +67,15 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
 
         if (!user) return res.status(404).json({ error: "User not found" })
 
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "PROFILE_UPDATED",
+            entity_type: "User",
+            entity_id: req.userId,
+            metadata: { updatedFields: Object.keys(updateData) } // Neleri güncellediğini görmek için harika bir detay
+        });
+
         return res.status(200).json({ user })
     } catch (e) {
         console.error(e)
@@ -124,6 +134,15 @@ export const toggleFavorite = async (req: Request, res: Response): Promise<any> 
                 { new: true }
             ).select("favorite_listings")
             await Listing.findByIdAndUpdate(listingId, { $inc: { save_count: -1 } })
+
+            await createActivityLog({
+                req, res,
+                actor: req.userId,
+                action: "LISTING_UNFAVORITED",
+                entity_type: "Listing",
+                entity_id:listingId.toString(),
+            });
+
         } else {
             updatedUser = await User.findByIdAndUpdate(
                 req.userId,
@@ -131,6 +150,15 @@ export const toggleFavorite = async (req: Request, res: Response): Promise<any> 
                 { new: true }
             ).select("favorite_listings")
             await Listing.findByIdAndUpdate(listingId, { $inc: { save_count: 1 } })
+
+            await createActivityLog({
+                req, res,
+                actor: req.userId,
+                action: "LISTING_FAVORITED",
+                entity_type: "Listing",
+                entity_id:listingId.toString(),
+            });
+
         }
 
         return res.status(200).json({
@@ -221,6 +249,15 @@ export const addToSaved = async (req: Request, res: Response): Promise<any> => {
         user.markModified("saved_listings")
         await user.save()
 
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: alreadyInList ? "LISTING_UNSAVED" : "LISTING_SAVED",
+            entity_type: "Listing",
+            entity_id: listingId,
+            metadata: { listName }
+        });
+
         // Map'i plain object'e çevirerek dön
         const savedAsObject = Object.fromEntries(user.saved_listings)
 
@@ -267,6 +304,15 @@ export const removeFromSaved = async (req: Request, res: Response): Promise<any>
 
         user.markModified("saved_listings")
         await user.save()
+
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "LISTING_UNSAVED",
+            entity_type: "Listing",
+            entity_id: listingId,
+            metadata: { listName }
+        });
 
         return res.status(200).json({
             removed: true,

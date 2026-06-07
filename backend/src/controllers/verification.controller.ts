@@ -2,8 +2,8 @@ import User from "../models/User"
 import {Request, Response} from "express";
 import { z } from "zod";
 import bcrypt from "bcryptjs"
+import { createActivityLog } from "../utils/logger.util";
 import {
-    localRegisterSchema,
     localRegisterValidationSchema,
     sendEduVerificationSchema,
     sendVerificationSchema
@@ -47,7 +47,13 @@ export const sendVerification  = async (req: Request, res: Response) => {
 
         const data=sendVerificationEmail(email, code)
 
-        console.log(`[DEV] Verification code for ${email}: ${code}. ${data} `)
+        await createActivityLog({
+            req, res,
+            action: "SEND_VERIFY_EMAIL",
+            metadata: { email }
+        });
+
+        // console.log(`[DEV] Verification code for ${email}: ${code}. ${data} `)
 
         return res.status(200).json({ message: "Verification code sent" })
 
@@ -91,7 +97,16 @@ export const sendEduVerification  = async (req: Request, res: Response) => {
 
         const data=sendVerificationEduEmail(edu_email, code)
 
-        console.log(`[DEV] Verification code for ${edu_email}: ${code}. ${data} `)
+        await createActivityLog({
+            req, res,
+            actor: userId,
+            action: "EDU_EMAIL_VERIFICATION_SENT",
+            entity_type: "User",
+            entity_id: userId,
+            metadata: { edu_email }
+        });
+
+        // console.log(`[DEV] Verification code for ${edu_email}: ${code}. ${data} `)
 
         return res.status(200).json({ message: "Verification code sent" })
 
@@ -151,7 +166,16 @@ export const verifyEduMail  = async (req: Request, res: Response) => {
 
         await PendingVerification.deleteOne({ email: edu_email });
 
-        return res.status(200).json({ message: "Edu email verified successfully ${edu_email}" });
+        await createActivityLog({
+            req, res,
+            actor: userId,
+            action: "EDU_EMAIL_VERIFIED",
+            entity_type: "User",
+            entity_id: userId,
+            metadata: { edu_email }
+        });
+
+        return res.status(200).json({ message: "Edu email verified successfully" });
     }catch (e) {
     console.error(e);
     return res.status(500).json({ error: "Server error" })

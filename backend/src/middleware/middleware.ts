@@ -74,6 +74,7 @@ export const ipResolver = (req: Request, res: Response, next: NextFunction) => {
 
 const keyGenerator = (req: Request, res: Response) => {
     // Kendi IP çözücümüzü kullanıyoruz
+    if (req.userId) return req.userId;
     return res.locals.clientIp as string;
 };
 
@@ -102,6 +103,15 @@ export const messagingLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 dakika
     max: 120, // Dakikada 120 istek (saniyede 2)
     message: { error: "Mesajlar çok hızlı güncelleniyor, lütfen anlık yavaşlayın." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator
+});
+
+export const emailVerificationLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 saat
+    max: 5, // IP başına 1 saatte en fazla 5 mail
+    message: { error: 'Çok fazla doğrulama kodu istediniz. Lütfen daha sonra tekrar deneyin.' },
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator

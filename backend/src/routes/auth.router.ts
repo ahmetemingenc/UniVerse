@@ -1,7 +1,7 @@
 import { Router } from "express"
 // import { register, login, completeProfile, getMe, forgotPassword, verifyResetCode, resetPassword } from "../controllers/auth.controller"
 import * as AC from '../controllers/auth.controller'
-import {authLimiter, authMiddleware} from "../middleware/middleware"
+import {authLimiter, authMiddleware, emailVerificationLimiter} from "../middleware/middleware"
 import { sendVerification} from "../controllers/verification.controller";
 
 const router = Router()
@@ -16,10 +16,10 @@ router.post("/register",            authLimiter,    AC.register)
 router.post("/login",               authLimiter,    AC.login)
 
 // POST /api/auth/forgot-password                           -> Request password reset
-router.post("/forgot-password",     authLimiter,    AC.forgotPassword)
+router.post("/forgot-password",     authLimiter, emailVerificationLimiter,    AC.forgotPassword)
 
 // POST /api/auth/verify-reset-code                         -> Verify the code
-router.post("/verify-reset-code",   authLimiter,    AC.verifyResetCode)
+router.post("/verify-reset-code",   authLimiter, emailVerificationLimiter,   AC.verifyResetCode)
 
 // POST /api/auth/reset-password                            -> Reset password & login
 router.post("/reset-password",      authLimiter,    AC.resetPassword)

@@ -15,7 +15,7 @@ import {
     emitMessageUpdated,
     emitOfferUpdated,
 } from '../Socket/Socket'
-//import { sendNewConversationEmail } from '../utils/mail.utils' // TODO: Sonra eklenecek
+import { createActivityLog } from "../utils/logger.util";
 import {sendMessageSchema} from "../validators/message.validator";
 import {IUser} from "../types/user.types";
 
@@ -121,6 +121,15 @@ export const sendMessage = async (req: Request, res: Response): Promise<any> => 
                     offerStatus:    'No Offer',
                 });
                 isNewConversation = true;
+
+                await createActivityLog({
+                    req, res,
+                    actor: currentUserId,
+                    action: "CONVERSATION_STARTED",
+                    entity_type: "Conversation",
+                    entity_id: conversation._id,
+                    metadata: { listingId, sellerId, buyerId }
+                });
             }
         } else {
             return res.status(400).json({ error: 'Mesaj göndermek için conversationId veya listingId zorunludur.' });
@@ -181,6 +190,18 @@ export const sendMessage = async (req: Request, res: Response): Promise<any> => 
             photos:       photoUrls,
             location:     location ?? null,
             offer:        finalOfferId,
+        });
+
+        await createActivityLog({
+            req, res,
+            actor: currentUserId,
+            action: "MESSAGE_SENT",
+            entity_type: "Message",
+            entity_id: message._id,
+            metadata: {
+                conversationId: conversation._id,
+                hasAttachment: !!(photoUrls.length || location || finalOfferId)
+            }
         });
 
         // Önizleme Metni
@@ -439,6 +460,15 @@ export const deleteMessage = async (req: Request, res: Response): Promise<any> =
         await message.save()
 
         await conversation.save()
+
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "MESSAGE_DELETED",
+            entity_type: "Message",
+            entity_id: message._id,
+            metadata: { conversationId: conversation._id }
+        });
 
         emitMessageUpdated(message.conversation.toString(), message)
         emitConversationUpdated(conversation.seller.toString(), conversation.buyer.toString(), conversation)

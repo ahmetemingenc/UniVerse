@@ -1,5 +1,5 @@
 import { Router } from "express"
-import {authMiddleware, studentOnly} from "../middleware/middleware"
+import {authMiddleware, emailVerificationLimiter, studentOnly} from "../middleware/middleware"
 // import {
 //     updateUser,
 //     getFavoriteListings,
@@ -56,6 +56,6 @@ router.get("/:id",                      authMiddleware,              UC.getPubli
 router.post("/sendEduVerification",     authMiddleware, studentOnly, sendEduVerification)
 
 // POST /api/user/verifyEduMail   → Verify Edu-Email
-router.post("/verifyEduMail",           authMiddleware, studentOnly, verifyEduMail)
+router.post("/verifyEduMail",           authMiddleware, emailVerificationLimiter, studentOnly, verifyEduMail)
 
 export default router

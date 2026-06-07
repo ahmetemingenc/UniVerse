@@ -5,6 +5,7 @@ import User from "../models/User"
 import { signAccessToken, signTempToken } from "../utils/token.utils"
 import { localRegisterSchema, loginSchema, completeProfileSchema, forgotPasswordSchema, verifyResetCodeSchema, resetPasswordSchema } from "../validators/auth.validator"
 import { OAuth2Client } from "google-auth-library"
+import { createActivityLog } from "../utils/logger.util";
 import PendingVerification from "../models/PendingVerification";
 import PasswordReset from "../models/PasswordReset";
 import { sendPasswordResetEmail } from "../utils/mail.utils";
@@ -59,6 +60,15 @@ export const register = async (req: Request, res: Response) => {
             // is_verified: false,
         })
 
+        await createActivityLog({
+            req, res,
+            actor: user._id,
+            action: "EDU_EMAIL_VERIFIED", // Mail kodu doğru girildi ve hesap açıldı
+            entity_type: "User",
+            entity_id: user._id,
+            metadata: { account_type }
+        });
+
         // 4. Giving user a temp-access for complete profile
         const tempToken = signTempToken(user._id.toString())
         return res.status(201).json({ tempToken })
@@ -100,6 +110,15 @@ export const login = async (req: Request, res: Response) => {
         if (user.is_banned) {
             return res.status(403).json({ error: "Your account has been banned" })
         }
+
+        await createActivityLog({
+            req, res,
+            actor: user._id,
+            action: "USER_LOGIN",
+            entity_type: "User",
+            entity_id: user._id,
+            metadata: { is_complete: user.is_complete }
+        });
 
         // 5. If this profile isn't completed give temp-access
         if (!user.is_complete) {
@@ -163,6 +182,14 @@ export const completeProfile = async (req: Request, res: Response) => {
         // 6. Update
         await User.findByIdAndUpdate(req.userId, updateData)
 
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "COMPLETE_PROFILE",
+            entity_type: "User",
+            entity_id: req.userId
+        });
+
         // 7. Grant full access
         const accessToken = signAccessToken(req.userId!)
         return res.status(200).json({ accessToken })
@@ -214,6 +241,14 @@ export const forgotPassword = async (req: Request, res: Response) => {
                 { code: hashedCode, expires },
                 { upsert: true, new: true }
             )
+
+            await createActivityLog({
+                req, res,
+                actor: user._id,
+                action: "FORGOT_PASSWORD",
+                entity_type: "User",
+                entity_id: user._id
+            });
 
             await sendPasswordResetEmail(user.email, code)
             console.log(`[DEV] Password reset code for ${user.email}: ${code}`)
