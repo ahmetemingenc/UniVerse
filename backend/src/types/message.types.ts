@@ -2,7 +2,7 @@ import { Document, Types } from 'mongoose'
 
 // 'user'   → normal kullanıcı mesajı  (text / photo / location / offer karışık olabilir)
 // 'system' → otomatik sistem mesajı   ("Offer kabul edildi 🎉", "Sohbet başlatıldı" vb.)
-export type MessageContentType = 'user' | 'system'
+export type MessageContentType = 'user' | 'system' | 'admin'
 
 export interface IMessage extends Document {
     _id: Types.ObjectId

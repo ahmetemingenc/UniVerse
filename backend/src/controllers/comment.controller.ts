@@ -5,6 +5,7 @@ import Comment from '../models/Comment'
 import User from '../models/User'
 import Offer from '../models/Offer'
 import { Listing } from '../models/Listing'
+import { createActivityLog } from "../utils/logger.util";
 import { createCommentSchema, updateCommentSchema } from '../validators/comment.validator'
 
 
@@ -123,6 +124,20 @@ export const newComment = async (req: Request, res: Response): Promise<any> => {
                 $inc: { rating_sum: rating, rating_count: 1 },
             })
         }
+
+        await createActivityLog({
+            req, res,
+            actor: authorId,
+            action: "COMMENT_CREATED",
+            entity_type: "Comment",
+            entity_id: comment._id,
+            metadata: {
+                listingId,
+                targetId,
+                isReply: !!parent,
+                hasRating: !!rating
+            }
+        });
 
         const populated = await comment.populate('author', 'username profile_photo')
         return res.status(201).json({ comment: populated })
@@ -321,6 +336,15 @@ export const updateComment = async (req: Request, res: Response): Promise<any> =
         comment.is_edited = true
         await comment.save()
 
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "COMMENT_UPDATED",
+            entity_type: "Comment",
+            entity_id: comment._id,
+            metadata: { hasRatingChanged: parsed.data.rating !== undefined }
+        });
+
         return res.json({ comment })
     } catch (error) {
         console.error('updateComment error:', error)
@@ -365,6 +389,18 @@ export const deleteComment = async (req: Request, res: Response): Promise<any> =
                 await userTarget.save();
             }
         }
+
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "COMMENT_DELETED",
+            entity_type: "Comment",
+            entity_id: comment._id,
+            metadata: {
+                targetId: target,
+                isSoftDelete: replyCount > 0 // Soft delete mi yoksa tamamen mi uçuruldu logda görebilmek için
+            }
+        });
 
         return res.json({ message: 'Yorum silindi' })
     } catch (error) {

@@ -6,8 +6,8 @@ import Conversation from '../models/Conversation'
 import { Listing }  from '../models/Listing'
 import Message      from '../models/Message'
 import { emitOfferUpdated, emitNewMessage } from '../Socket/Socket'
+import { createActivityLog } from "../utils/logger.util";
 import {applySchema, makeOfferSchema, respondToOfferSchema} from "../validators/offer.validation";
-import {verifyResetCodeSchema} from "../validators/auth.validator";
 
 // ─── APPLY (Job / Scholarship) ────────────────────────────────────────────────
 // POST /api/offer/apply
@@ -59,6 +59,15 @@ export const applyToListing = async (req: Request, res: Response): Promise<any> 
             status:       'Pending',
             expiresAt:    null,
         })
+
+        await createActivityLog({
+            req, res,
+            actor: applicantId,
+            action: "OFFER_SENT",
+            entity_type: "Offer",
+            entity_id: offer._id,
+            metadata: { listingId, is_direct_application: true } // Direkt başvuru olduğunu belirtmek iyi olur
+        });
 
         const populated = await offer.populate('applicant', 'name surname profile_photo university')
 
@@ -129,6 +138,15 @@ export const makeOffer = async (req: Request, res: Response): Promise<any> => {
         // Conversation'ın activeOffer'ını güncelle
         conversation.offerStatus = "Offer Sent"
         await conversation.save()
+
+        await createActivityLog({
+            req, res,
+            actor: userId,
+            action: "OFFER_SENT",
+            entity_type: "Offer",
+            entity_id: offer._id,
+            metadata: { conversationId, price }
+        });
 
         // Teklifi mesaj olarak da yayınla (UI'da özel kart gösterimi için)
         const systemMsg = await Message.create({
@@ -201,6 +219,17 @@ export const respondToOffer = async (req: Request, res: Response): Promise<any> 
 
         offer.status = action === 'accepted' ? 'Accepted' : 'Rejected'
         await offer.save()
+
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: action === 'accepted' ? "OFFER_ACCEPTED" : "OFFER_REJECTED",
+            entity_type: "Offer",
+            entity_id: offer._id,
+            metadata: {
+                listingId: (offer.listing as any)?._id || offer.listing
+            }
+        });
 
         // Eğer teklif kabul edildiyse
 
@@ -289,6 +318,14 @@ export const cancelOffer = async (req: Request, res: Response): Promise<any> => 
 
         offer.status = 'Cancelled'
         await offer.save()
+
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "OFFER_CANCELLED",
+            entity_type: "Offer",
+            entity_id: offer._id
+        });
 
         if (offer.conversation) {
             await Conversation.findByIdAndUpdate(offer.conversation, {

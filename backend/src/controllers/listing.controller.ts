@@ -4,6 +4,7 @@ import User from "../models/User"
 import Offer from "../models/Offer"
 import { uploadMultiple, deleteFile } from '../utils/cloudinary/uploader.util';
 import { createListingSchema, updateListingSchema } from '../validators/listing.validator'
+import { createActivityLog } from "../utils/logger.util";
 import {z} from "zod";
 import {IUser} from "../types/user.types";
 
@@ -55,6 +56,14 @@ export const createListing = async (req: Request, res: Response): Promise<any> =
             photos,
             owner: req.userId,
         })
+
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "LISTING_CREATED",
+            entity_type: "Listing",
+            entity_id: listing._id
+        });
 
         return res.status(201).json({ listing })
     } catch (error) {
@@ -341,6 +350,14 @@ export const updateListing = async (req: Request, res: Response): Promise<any> =
         Object.assign(listing, updateData)
         await listing.save()
 
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "LISTING_UPDATED",
+            entity_type: "Listing",
+            entity_id: listing._id
+        });
+
         return res.json({ listing })
     } catch (error) {
         console.error('Update listing error:', error)
@@ -365,6 +382,14 @@ export const deleteListing = async (req: Request, res: Response): Promise<any> =
         listing.is_deleted = true;
         listing.status = 'closed';
         await listing.save();
+
+        await createActivityLog({
+            req, res,
+            actor: req.userId,
+            action: "LISTING_DELETED",
+            entity_type: "Listing",
+            entity_id: listing._id
+        });
 
         return res.json({ message: 'Listing deleted (soft)' })
     } catch (error) {

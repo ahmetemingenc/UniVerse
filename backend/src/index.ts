@@ -32,6 +32,7 @@ import { startExpiredListingsCron } from "./cron/expiredListings.job";
 import {initSocket} from "./Socket/Socket";
 import {startMessageEmailCron} from "./cron/sendMessageEmail.job";
 import { ipResolver, globalLimiter } from "./middleware/middleware";
+import adminRouter from "./routes/admin.router";
 
 const app = express()
 const httpServer = http.createServer(app)   // HTTP Server for Socket.io
@@ -61,6 +62,7 @@ app.use('/api/comment', commendRouter);
 app.use("/api/user", userRouter);
 app.use("/api/messaging", messageRouter);
 app.use("/api/offer", offerRouter);
+app.use('/api/admin', adminRouter);
 
 app.get("/", (req: Request, res: Response) => {
     res.json({ message: "UniVerse Backend API working" })

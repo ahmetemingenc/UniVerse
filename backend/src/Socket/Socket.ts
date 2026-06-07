@@ -4,6 +4,7 @@ import { verifyToken } from '../utils/token.utils'
 import Message from '../models/Message'
 import Conversation from '../models/Conversation'
 import { SOCKET_EVENTS } from './socket.events'
+export const onlineUsersMap = new Map<string, { socketId: string, ip: string, connectedAt: Date }>();
 
 // Global io instance — controller'lardan emit için export edilir
 export let io: Server
@@ -55,6 +56,14 @@ export const initSocket = (httpServer: HttpServer): void => {
         socket.join(`user:${userId}`)
 
         console.log(`[Socket] Connected: ${userId} (${socket.id})`)
+
+        const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.request.socket.remoteAddress || "Bilinmiyor";
+
+        onlineUsersMap.set(userId, {
+            socketId: socket.id,
+            ip: Array.isArray(clientIp) ? clientIp[0] : clientIp,
+            connectedAt: new Date()
+        });
 
         // ── Conversation odasına gir ──────────────────────────────────────────
         // Client sohbet ekranını açınca çağırır. Server-side membership kontrolü eklenir.
@@ -142,6 +151,7 @@ export const initSocket = (httpServer: HttpServer): void => {
         // ── Disconnect ────────────────────────────────────────────────────────
         socket.on('disconnect', (reason) => {
             console.log(`[Socket] Disconnected: ${userId} — ${reason}`)
+            onlineUsersMap.delete(userId);
         })
     })
 
@@ -163,10 +173,21 @@ export const emitMessageUpdated = (conversationId: string, message: any): void =
     io?.to(`conv:${conversationId}`).emit(SOCKET_EVENTS.MESSAGE_UPDATED, message)
 }
 
+export const emitSystemAnnouncement = (title: string, message: string) => {
+    if (!io) return;
+    // Bütün bağlı olan (online) client'lara bu eventi fırlatır
+    io.emit('system_announcement', {
+        title,
+        message,
+        timestamp: new Date()
+    });
+};
+
 /**
  * Conversation'ın lastMessage / unreadCount bilgilerini güncelle.
  * İki kullanıcının da sohbet listesi anlık güncellenir.
  */
+
 export const emitConversationUpdated = (
     sellerId: string,
     buyerId: string,
