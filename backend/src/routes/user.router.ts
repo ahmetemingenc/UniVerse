@@ -13,6 +13,7 @@ import {authMiddleware, emailVerificationLimiter, studentOnly} from "../middlewa
 import * as UC from '../controllers/user.controller'
 
 import {sendEduVerification, verifyEduMail} from "../controllers/verification.controller";
+import {changePassword} from "../controllers/user.controller";
 
 const router = Router()
 
@@ -20,6 +21,8 @@ const router = Router()
 
 // PATCH /api/user/me          → Profil güncelle (isim, şifre, foto vb.)
 router.patch("/me",                     authMiddleware,              UC.updateUser)
+
+router.patch('/me/change-password', authMiddleware, changePassword);
 
 // ─── FAVORİLER ────────────────────────────────────────────────────────────
 

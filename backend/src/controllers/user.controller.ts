@@ -8,7 +8,7 @@ import { Listing } from "../models/Listing"
 import {
     updateUserSchema,
     addToSavedSchema,
-    removeFromSavedSchema
+    removeFromSavedSchema, changePasswordSchema
 } from "../validators/user.validator"
 
 // ─── 1. PROFILE UPDATE ────────────────────────────────────────────────────
@@ -380,3 +380,55 @@ export const getPublicProfileByUsername = async (req: Request, res: Response): P
         return res.status(500).json({ error: "Server error" })
     }
 }
+
+export const changePassword = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const parsed = changePasswordSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({ errors: z.treeifyError(parsed.error) });
+        }
+
+        const { oldPassword, newPassword } = parsed.data;
+
+        // Kullanıcıyı çekiyoruz
+        const user = await User.findById(req.userId);
+        if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+        // ── DETECT BEFORE UPDATE ───────────────────────────────────
+        // Kullanıcının halihazırda bir şifresi var mı? (Boolean olarak saklıyoruz)
+        const hasExistingPassword = !!user.password;
+
+        // Eğer kullanıcının zaten bir şifresi varsa
+        if (hasExistingPassword) {
+            if (!oldPassword) {
+                return res.status(400).json({ error: "Mevcut şifrenizi girmelisiniz." });
+            }
+
+            const isMatch = await bcrypt.compare(oldPassword, user.password!!);
+            if (!isMatch) {
+                return res.status(400).json({ error: "Eski şifreniz yanlış." });
+            }
+        }
+
+        // ─── YENİ ŞİFREYİ KAYDET ────────────────────────────────
+        user.password = await bcrypt.hash(newPassword, 12);
+        await user.save();
+
+        // ++ LOGLAMA ++
+        await createActivityLog({
+            req, res, actor: req.userId,
+            action: "PASSWORD_CHANGED" as any,
+            entity_type: "User", entity_id: user._id
+        });
+
+        // Artık güncelleme öncesindeki duruma bakarak doğru mesajı verebiliriz
+        const message = hasExistingPassword
+            ? "Şifreniz başarıyla değiştirildi."
+            : "Şifreniz başarıyla oluşturuldu. Artık e-posta ve şifrenizle de giriş yapabilirsiniz.";
+
+        return res.status(200).json({ message });
+    } catch (e) {
+        console.error("Change Password Error:", e);
+        return res.status(500).json({ error: "Server error" });
+    }
+};

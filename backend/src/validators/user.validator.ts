@@ -31,3 +31,8 @@ export const removeFromSavedSchema = z.object({
     listingId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid listing ID"),
     listName:  z.string().min(1, "List name required").max(50).trim(),
 })
+
+export const changePasswordSchema = z.object({
+    oldPassword: z.string().min(8, "Eski şifre en az 8 karakter olmalıdır."),
+    newPassword: z.string().min(8, "Yeni şifre en az 8 karakter olmalıdır.")
+});
