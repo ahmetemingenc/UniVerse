@@ -18,3 +18,7 @@ export const respondToOfferSchema = z.object({
     action: z.enum(["accepted", "rejected"],"Geçersiz işlem. accept veya reject gönderin.")
 
 })
+
+export const checkAgreementSchema = z.object({
+    listingId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Geçersiz ilan ID formatı")
+});

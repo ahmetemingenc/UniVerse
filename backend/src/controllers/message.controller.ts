@@ -150,17 +150,20 @@ export const sendMessage = async (req: Request, res: Response): Promise<any> => 
 
         // 4. Entegre Teklif Sistemi
         if (typeof offerPrice === 'number' && offerPrice > 0) {
-            if (currentUserId !== buyerId) {
-                return res.status(403).json({ error: 'Sadece alıcılar teklif verebilir.' });
-            }
+
+            // Satıcı veya alıcı ayrımı yapmaksızın herkes teklif verebilir.
+            // Sadece alıcılar teklif verebilir engelini kaldırdık.
 
             await Promise.all([
+                // Teklifi yapan kişi yeni bir teklif atıyorsa, önceki kendi bekleyen tekliflerini iptal et (Cancelled)
                 Offer.updateMany(
-                    { conversation: conversation._id, applicant: buyerId, status: 'Pending' },
+                    { conversation: conversation._id, applicant: currentUserId, status: 'Pending' },
                     { $set: { status: 'Cancelled' } }
                 ),
+                // Teklifi yapan kişi, KENDİSİ HARİÇ (karşı tarafın) bekleyen teklifleri varken yeni teklif atıyorsa,
+                // karşı tarafın teklifini reddetmiş say (Rejected - Karşı teklif mantığı)
                 Offer.updateMany(
-                    { conversation: conversation._id, applicant: { $ne: buyerId }, status: 'Pending' },
+                    { conversation: conversation._id, applicant: { $ne: currentUserId }, status: 'Pending' },
                     { $set: { status: 'Rejected' } }
                 )
             ]);
@@ -168,7 +171,7 @@ export const sendMessage = async (req: Request, res: Response): Promise<any> => 
             const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
             const newOffer = await Offer.create({
                 listing:      listing._id,
-                applicant:    buyerId,
+                applicant:    currentUserId, // buyerId yerine işlemi yapan kişiyi (currentUserId) koyduk
                 conversation: conversation._id,
                 price:        offerPrice,
                 pricePer:     offerPricePer,
