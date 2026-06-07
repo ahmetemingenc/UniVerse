@@ -30,6 +30,9 @@ export default function Home() {
     const [popularListings, setPopularListings] = useState<Advert[]>([]);
     const [accountType, setAccountType] = useState<string | null>(null);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+
     useEffect(() => {
         const fetchData = async () => {
             const rawToken = localStorage.getItem('accessToken');
@@ -48,7 +51,7 @@ export default function Home() {
             // user type
             if (isValidToken) {
                 try {
-                    const userRes = await fetch('http://localhost:5000/api/auth/me', { headers });
+                    const userRes = await fetch(`${API_URL}/auth/me`, { headers });
                     if (userRes.ok) {
                         const userData = await userRes.json();
                         fetchedType =
@@ -69,7 +72,7 @@ export default function Home() {
             // fetch listings (if not external)
             if (fetchedType !== 'external') {
                 try {
-                    const baseRes = await fetch('http://localhost:5000/api/listing', { headers });
+                    const baseRes = await fetch(`${API_URL}/api/listing`, { headers });
 
                     if (baseRes.ok) {
                         const baseData = await baseRes.json();
