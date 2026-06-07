@@ -45,4 +45,4 @@ Bu proje; Ege Üniversitesi, Ön-Yüz Yazılım Geliştirme bölümü bitirme pr
 
 * **Ahmet Emin GENÇ** - *Frontend Developer & UI/UX Designer*
 * **Mehmet TOPRAK** - *Backend Developer & System Architect*
-* **İsmail GÜLTEKİN** - *Security & Documentation Lead*
+* **İsmail GÜLTEKİN** - *Security & Documentation Lead *
