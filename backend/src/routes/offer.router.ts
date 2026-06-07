@@ -1,6 +1,7 @@
 import {Router} from 'express'
 import * as OC from '../controllers/offer.controller'
 import {authMiddleware, studentOnly} from "../middleware/middleware";
+import {checkListingAgreement} from "../controllers/offer.controller";
 
 const router = Router()
 
@@ -23,5 +24,8 @@ router.patch('/:offerId/respond',  authMiddleware, OC.respondToOffer)
 
 // PATCH  /api/offer/:offerId/cancel                 → İptal
 router.patch('/:offerId/cancel',   authMiddleware, OC.cancelOffer)
+
+// GET  /api/offer/check-agreement/:listingId                 → Check the offers for any agreement in the listing
+router.get("/check-agreement/:listingId", authMiddleware, checkListingAgreement);
 
 export default router

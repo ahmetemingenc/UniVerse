@@ -7,7 +7,7 @@ import { Listing }  from '../models/Listing'
 import Message      from '../models/Message'
 import { emitOfferUpdated, emitNewMessage } from '../Socket/Socket'
 import { createActivityLog } from "../utils/logger.util";
-import {applySchema, makeOfferSchema, respondToOfferSchema} from "../validators/offer.validation";
+import {applySchema, checkAgreementSchema, makeOfferSchema, respondToOfferSchema} from "../validators/offer.validation";
 
 // ─── APPLY (Job / Scholarship) ────────────────────────────────────────────────
 // POST /api/offer/apply
@@ -410,3 +410,46 @@ export const getMyApplications = async (req: Request, res: Response): Promise<an
         return res.status(500).json({ error: 'Server error' })
     }
 }
+
+
+
+export const checkListingAgreement = async (req: Request, res: Response): Promise<any> => {
+    try {
+        // 1. Validasyon (listingId query veya params olarak gelebilir, biz params tercih ediyoruz)
+        const parsed = checkAgreementSchema.safeParse(req.params);
+        if (!parsed.success) {
+            return res.status(400).json({ errors: z.treeifyError(parsed.error) });
+        }
+
+        const { listingId } = parsed.data;
+        const currentUserId = req.userId!; // İstekte bulunan (Giriş yapmış olan) kullanıcı
+
+        // 2. İlanı bul ve sahibinin ID'sini al
+        const listing = await Listing.findById(listingId).select("owner");
+        if (!listing) {
+            return res.status(404).json({ error: "İlan bulunamadı" });
+        }
+
+        const ownerId = listing.owner.toString();
+
+        // 3. Anlaşma (Accepted Offer) kontrolü
+        // Senin yazdığın hasAgreement logic'inin birebir optimize edilmiş hali:
+        const agreementExists = await Offer.exists({
+            listing: listingId,
+            status: "Accepted",
+            applicant: { $in: [currentUserId, ownerId] }
+        });
+
+        // 4. Yanıtı dön
+        return res.status(200).json({
+            hasAgreement: !!agreementExists,
+            listingId,
+            currentUser: currentUserId,
+            listingOwner: ownerId
+        });
+
+    } catch (error) {
+        console.error("checkListingAgreement error:", error);
+        return res.status(500).json({ error: "Server error" });
+    }
+};
