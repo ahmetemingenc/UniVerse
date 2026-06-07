@@ -53,6 +53,20 @@ export const studentOnly = async (req: Request, res: Response, next: NextFunctio
 
 }
 
+export const adminOnly = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = await User.findById(req.userId);
+        if (!user || !user.is_admin) {
+            return res.status(403).json({ error: "Erişim reddedildi. Bu işlem için Admin yetkisi gereklidir." });
+        }
+        req.user = user; // Sonraki controller'da tekrar DB'ye gitmemek için
+        next();
+    } catch (e) {
+        console.error("Admin middleware hatası:", e);
+        return res.status(500).json({ error: "Server error" });
+    }
+}
+
 // ─── 2. GÜVENLİK ──────────────────────────────────
 
 export const ipResolver = (req: Request, res: Response, next: NextFunction) => {

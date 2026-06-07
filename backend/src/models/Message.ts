@@ -18,7 +18,7 @@ const messageSchema = new Schema<IMessage>(
         // 'system' → sistem mesajı   ("Teklif kabul edildi", "Sohbet başlatıldı")
         type: {
             type: String,
-            enum: ['user', 'system'],
+            enum: ['user', 'system', 'admin'],
             default: 'user',
         },
 

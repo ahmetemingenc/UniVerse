@@ -251,7 +251,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
             });
 
             await sendPasswordResetEmail(user.email, code)
-            console.log(`[DEV] Password reset code for ${user.email}: ${code}`)
+            // console.log(`[DEV] Password reset code for ${user.email}: ${code}`)
         }
 
         return res.status(200).json({ message: "If an account with those details exists, a password reset email has been sent." })

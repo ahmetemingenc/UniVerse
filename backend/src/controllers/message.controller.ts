@@ -231,7 +231,7 @@ export const sendMessage = async (req: Request, res: Response): Promise<any> => 
             conversation.unreadCount.buyer += 1;
         }
 
-        console.log(conversation);
+        // console.log(conversation);
         await conversation.save();
 
         // 7. Popülasyonlar

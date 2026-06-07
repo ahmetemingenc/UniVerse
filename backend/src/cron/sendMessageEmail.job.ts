@@ -31,7 +31,7 @@ export const startMessageEmailCron = () => {
                 return;
             }
 
-            console.log(conversations +"deneme");
+            // console.log(conversations +"deneme");
 
 
             let sentMailCount = 0;
@@ -52,7 +52,7 @@ export const startMessageEmailCron = () => {
                 ]);
 
                 if (!getterUser || !getterUser.email || !senderUser || !listingInfo) {
-                    console.log(`[DEBUG] Alıcı (${getterId}), Gönderen (${senderId}) veya İlan (${listingId}) eksik !`);
+                    // console.log(`[DEBUG] Alıcı (${getterId}), Gönderen (${senderId}) veya İlan (${listingId}) eksik !`);
                     continue;
                 }
 
@@ -63,7 +63,7 @@ export const startMessageEmailCron = () => {
                 }).sort({createdAt: 1});
 
                 if (unreadMessages.length === 0) {
-                    console.log(`[DEBUG] Konuşma ID: ${convo._id} için Message tablosunda mesaj bulunamadı!`);
+                    // console.log(`[DEBUG] Konuşma ID: ${convo._id} için Message tablosunda mesaj bulunamadı!`);
                     continue;
                 }
 
@@ -83,16 +83,16 @@ export const startMessageEmailCron = () => {
                 // Artık elimizde tertemiz ve typesafe bir listingInfo.title var!
 
                 if (emailType === 'new_offer') {
-                    console.log(`[CRON] ${getterUser.email} adresine YENİ TEKLİF maili gönderildi! (Gönderen: ${senderUser.name}, İlan: ${listingInfo.title})`);
+                    // console.log(`[CRON] ${getterUser.email} adresine YENİ TEKLİF maili gönderildi! (Gönderen: ${senderUser.name}, İlan: ${listingInfo.title})`);
                     await sendNewOfferEmail(getterUser.email, senderUser, listingInfo, unreadMessages);
                     // console.log(getterUser.email, senderUser, listingInfo, unreadMessages)
 
                 } else if (emailType === 'new_conversation') {
-                    console.log(`[CRON] ${getterUser.email} adresine YENİ SOHBET maili gönderildi! (Gönderen: ${senderUser.name}, İlan: ${listingInfo.title})`);
+                    // console.log(`[CRON] ${getterUser.email} adresine YENİ SOHBET maili gönderildi! (Gönderen: ${senderUser.name}, İlan: ${listingInfo.title})`);
                     await sendNewConversationEmail(getterUser.email, senderUser, listingInfo, unreadMessages);
 
                 } else {
-                    console.log(`[CRON] ${getterUser.email} adresine ${unreadMessages.length} OKUNMAMIŞ MESAJ maili gönderildi! (Gönderen: ${senderUser.name}, İlan: ${listingInfo.title})`);
+                    // console.log(`[CRON] ${getterUser.email} adresine ${unreadMessages.length} OKUNMAMIŞ MESAJ maili gönderildi! (Gönderen: ${senderUser.name}, İlan: ${listingInfo.title})`);
                     await sendUnreadMessagesEmail(getterUser.email, senderUser, listingInfo, unreadMessages);
                 }
 
