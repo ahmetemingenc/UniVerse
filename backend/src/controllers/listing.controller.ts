@@ -397,3 +397,65 @@ export const deleteListing = async (req: Request, res: Response): Promise<any> =
         return res.status(500).json({ error: 'Server error' })
     }
 }
+
+export const republishListing = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { id } = req.params;
+
+        // İlanı ve sahibini bul (Sadece kendi ilanını yenileyebilir)
+        const listing = await Listing.findOne({ _id: id, owner: req.userId });
+
+        if (!listing) {
+            return res.status(404).json({ error: 'İlan bulunamadı veya yetkiniz yok.' });
+        }
+
+        // 1. KURAL: İlan zaten aktifse işlem yapma
+        if (listing.status === 'active') {
+            return res.status(400).json({ error: 'Bu ilan zaten aktif durumda.' });
+        }
+
+        const now = new Date();
+
+        // İlanın süresinin bitip bitmediğini kontrol et
+        // (Tarih geçmiş olabilir VEYA cron job vs. statüsünü 'expired' yapmış olabilir)
+        const isExpired = !listing.expires || listing.expires <= now || listing.status === 'expired';
+
+        if (isExpired) {
+            // 3. KURAL: Süresi dolmuşsa zamanı güncelle
+            const expiresDate = new Date();
+            if (listing.is_urgent) {
+                expiresDate.setHours(expiresDate.getHours() + 24); // Acil ilanlara +24 Saat
+            } else {
+                expiresDate.setMonth(expiresDate.getMonth() + 1); // Normal ilanlara +1 Ay
+            }
+            listing.expires = expiresDate;
+        }
+        // 2. KURAL: Süresi dolmamışsa (else durumu), yukarıdaki if bloğuna girmez
+        // ve listing.expires tarihi olduğu gibi kalır. Sadece statüsü değişir.
+
+        // İlanı tekrar aktif et
+        listing.status = 'active';
+        listing.is_deleted = false; // Soft delete yapıldıysa geri al
+        await listing.save();
+
+        // ++ LOGLAMA ++
+        await createActivityLog({
+            req, res, actor: req.userId,
+            action: "LISTING_REPUBLISHED" as any,
+            entity_type: "Listing", entity_id: listing._id,
+            metadata: {
+                newExpiresDate: listing.expires,
+                wasExpired: isExpired // Loglarda ilan süresi bittiği için mi uzatıldı görmek isteyebilirsin
+            }
+        });
+
+        const message = isExpired
+            ? 'İlan süresi uzatıldı ve başarıyla yeniden yayınlandı.'
+            : 'İlanınız tekrar aktif edildi.';
+
+        return res.json({ message, listing });
+    } catch (error) {
+        console.error('Republish listing error:', error);
+        return res.status(500).json({ error: 'Server error' });
+    }
+};
