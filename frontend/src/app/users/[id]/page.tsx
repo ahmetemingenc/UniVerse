@@ -35,12 +35,15 @@ export default function PublicProfilePage() {
                 setError(null);
 
                 const token = localStorage.getItem('accessToken');
-                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                const getHeaders = (): HeadersInit => {
+                    const token = localStorage.getItem('accessToken');
+                    return token ? { 'Authorization': `Bearer ${token}` } : {};
+                };
 
                 // 1. İlan ID'si üzerinden ilanı çekip Sahibini (Owner) buluyoruz
                 const listingRes = await fetch(`${API_URL}/api/listing/${listingId}`, {
                     method: 'GET',
-                    headers
+                    headers: getHeaders()
                 });
 
                 if (!listingRes.ok) {
@@ -62,7 +65,7 @@ export default function PublicProfilePage() {
                 const sellerId = seller._id || seller;
                 const listingsRes = await fetch(`${API_URL}/api/listing/user/${sellerId}`, {
                     method: 'GET',
-                    headers
+                    headers: getHeaders()
                 });
 
                 if (listingsRes.ok) {
