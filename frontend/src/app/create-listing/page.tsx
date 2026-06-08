@@ -127,10 +127,29 @@ export default function CreateListingWizard() {
     useEffect(() => {
         const fetchDistricts = async () => {
             if (!selectedCityId) return setDistricts([]);
+
             try {
-                const res = await fetch(`${API_URL}/api/misc/districts/${selectedCityId}`);
-                if (res.ok) setDistricts(await res.json());
-            } catch (error) { console.error("İlçe Hata:", error); }
+                const token = localStorage.getItem('accessToken');
+
+                const res = await fetch(`${API_URL}/api/misc/districts/${selectedCityId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setDistricts(data);
+                } else {
+                    console.error("İlçeler çekilemedi. Hata kodu:", res.status);
+                    setDistricts([]);
+                }
+            } catch (error) {
+                console.error("İlçe Hata:", error);
+                setDistricts([]);
+            }
         };
         fetchDistricts();
     }, [selectedCityId]);
