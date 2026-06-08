@@ -12,6 +12,7 @@ interface Advert {
     category: string;
     createdAt: string;
     owner: any;
+    photos?: string[];
 }
 
 export default function ProfilePage() {
@@ -375,13 +376,27 @@ export default function ProfilePage() {
                             ) : (
                                 myAdverts.map((advert) => (
                                     <div key={advert._id} className="group bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-cyan-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-gray-100 group-hover:text-cyan-400 transition-colors">{advert.title}</h3>
-                                            <div className="flex gap-3 mt-2 text-xs font-medium text-gray-500">
-                                                <span className="bg-white/5 px-2 py-1 rounded-md uppercase text-cyan-400">{advert.category || 'Genel'}</span>
-                                                <span className="flex items-center gap-1"><Calendar size={12}/> {new Date(advert.createdAt).toLocaleDateString('tr-TR')}</span>
+
+                                        {/* YENİ EKLENEN KISIM: Fotoğraf ve Başlık Yan Yana */}
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[#0B0F19] border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                {advert.photos && advert.photos.length > 0 ? (
+                                                    <img src={advert.photos[0]} alt={advert.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                ) : (
+                                                    <Package size={24} className="text-gray-600" />
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <h3 className="font-bold text-lg text-gray-100 group-hover:text-cyan-400 transition-colors line-clamp-1">{advert.title}</h3>
+                                                <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 text-[10px] sm:text-xs font-medium text-gray-500">
+                                                    <span className="bg-white/5 px-2 py-1 rounded-md uppercase text-cyan-400">{advert.category || 'Genel'}</span>
+                                                    <span className="flex items-center gap-1"><Calendar size={12}/> {new Date(advert.createdAt).toLocaleDateString('tr-TR')}</span>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {/* Fiyat ve Butonlar (Aynı Kaldı) */}
                                         <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-white/10 md:border-0">
                                             <span className="text-xl font-black text-emerald-400">₺{advert.price}</span>
                                             <div className="flex items-center gap-2">
@@ -405,10 +420,26 @@ export default function ProfilePage() {
                             ) : (
                                 myFavorites.map((fav) => (
                                     <div key={fav._id} className="group bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-rose-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-gray-100 group-hover:text-rose-400 transition-colors">{fav.title}</h3>
-                                            <p className="text-sm text-gray-400 mt-1">Satıcı: <span className="text-cyan-400 font-medium">@{fav.owner?.username || 'Kullanıcı'}</span></p>
+
+                                        {/* YENİ EKLENEN KISIM: Fotoğraf ve Başlık Yan Yana */}
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[#0B0F19] border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                {fav.photos && fav.photos.length > 0 ? (
+                                                    <img src={fav.photos[0]} alt={fav.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                ) : (
+                                                    <Package size={24} className="text-gray-600" />
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <h3 className="font-bold text-lg text-gray-100 group-hover:text-rose-400 transition-colors line-clamp-1">{fav.title}</h3>
+                                                <p className="text-[11px] sm:text-xs text-gray-400 mt-1.5 font-medium">
+                                                    Satıcı: <span className="text-cyan-400">@{fav.owner?.username || 'Kullanıcı'}</span>
+                                                </p>
+                                            </div>
                                         </div>
+
+                                        {/* Fiyat ve Butonlar (Aynı Kaldı) */}
                                         <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-white/10 md:border-0">
                                             <span className="text-xl font-black text-emerald-400">₺{fav.price}</span>
                                             <div className="flex items-center gap-2">

@@ -559,7 +559,10 @@ export default function AdDetailPage() {
                             )}
 
                             {seller && (
-                                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6 flex items-center space-x-4">
+                                <div
+                                    onClick={() => router.push(`/users/${id}`)}
+                                    className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6 flex items-center space-x-4 cursor-pointer hover:bg-white/10 hover:border-cyan-500/50 transition-all group"
+                                >
                                     <div className="w-12 h-12 rounded-full overflow-hidden bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center flex-shrink-0">
                                         {seller.avatar || seller.profile_photo ? (
                                             <img src={seller.avatar || seller.profile_photo} alt={seller.username} className="w-full h-full object-cover" />
@@ -569,7 +572,7 @@ export default function AdDetailPage() {
                                     </div>
                                     <div>
                                         <div className="flex items-center space-x-2">
-                                            <h4 className="text-white font-bold text-sm">@{seller.username || 'Kullanıcı'}</h4>
+                                            <h4 className="text-white font-bold text-sm group-hover:text-cyan-400 transition-colors">@{seller.username || 'Kullanıcı'}</h4>
 
                                             {/* Dinamik Kullanıcı Rozetleri */}
                                             {seller.account_type === 'student' ? (
