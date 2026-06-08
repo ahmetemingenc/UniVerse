@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 
-// made optional (?) to prevent crashes if data is missing during initial load
 interface CountdownTimerProps {
     expiresAt?: string;
+    onComplete?: () => void; // Süre bittiğinde tetiklenecek fonksiyon
 }
 
-export default function CountdownTimer({ expiresAt }: CountdownTimerProps) {
+export default function CountdownTimer({ expiresAt, onComplete }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState('');
+    const [isFinished, setIsFinished] = useState(false);
 
     useEffect(() => {
-        // safety check: if no date is provided yet do not attempt to calculate
         if (!expiresAt) {
             setTimeLeft("...");
             return;
@@ -20,7 +20,13 @@ export default function CountdownTimer({ expiresAt }: CountdownTimerProps) {
         const calculateTimeLeft = () => {
             const difference = new Date(expiresAt).getTime() - new Date().getTime();
 
-            if (difference <= 0) return "SÜRE DOLDU";
+            if (difference <= 0) {
+                if (!isFinished) {
+                    setIsFinished(true);
+                    if (onComplete) onComplete();
+                }
+                return "SÜRE DOLDU";
+            }
 
             const h = Math.floor((difference / (1000 * 60 * 60)) % 24);
             const m = Math.floor((difference / 1000 / 60) % 60);
@@ -29,24 +35,24 @@ export default function CountdownTimer({ expiresAt }: CountdownTimerProps) {
             return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         };
 
-        // initial calculation strictly inside useEffect
         setTimeLeft(calculateTimeLeft());
 
-        // interval setup
         const timer = setInterval(() => {
             setTimeLeft(calculateTimeLeft());
         }, 1000);
 
-        // cleanup function
         return () => clearInterval(timer);
-    }, [expiresAt]);
+    }, [expiresAt, isFinished, onComplete]);
 
-    // return empty placeholder to prevent layout shifts before calculation
-    if (!timeLeft) return <span className="w-16 h-6 inline-block"></span>;
+    if (!timeLeft) return <span className="w-16 h-6 inline-block animate-pulse bg-white/5 rounded-md"></span>;
 
     return (
-        <span className="font-mono text-rose-400 font-black tracking-widest bg-rose-950/50 px-2 py-1 rounded-md border border-rose-500/30">
-      {timeLeft}
-    </span>
+        <span className={`font-mono font-black tracking-widest px-2 py-1 rounded-md border text-xs ${
+            isFinished
+                ? 'text-rose-600 bg-rose-500/10 border-rose-500/20'
+                : 'text-rose-400 bg-rose-950/50 border-rose-500/30'
+        }`}>
+            {timeLeft}
+        </span>
     );
 }
