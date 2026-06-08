@@ -39,6 +39,14 @@ const fixEncodingAndFormat = (text: any) => {
 };
 
 export default function AdDetailPage() {
+    const getExpiresAt = () => {
+        if (ad.type !== 'urgent' || !ad.expires || isNaN(Number(ad.expires))) return null;
+        const createdAt = new Date(ad.createdAt);
+        if (isNaN(createdAt.getTime())) return null;
+        return new Date(createdAt.getTime() + (Number(ad.expires) * 60 * 60 * 1000)).toISOString();
+    };
+
+    const expiresAt = getExpiresAt();
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
@@ -392,7 +400,7 @@ export default function AdDetailPage() {
                     {/* left area */}
                     <div className="lg:col-span-2 space-y-8">
 
-                        {ad.type === 'urgent' && (
+                        {ad.type === 'urgent' && expiresAt && (
                             <div className="bg-rose-500/10 border border-rose-500/30 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between shadow-[0_0_30px_rgba(244,63,94,0.1)]">
                                 <div className="flex items-center gap-4 mb-4 md:mb-0">
                                     <div className="p-4 bg-rose-500 rounded-2xl text-black animate-pulse">
@@ -403,11 +411,12 @@ export default function AdDetailPage() {
                                         <p className="text-rose-300 text-sm">Bu ilan kritik ihtiyaçlar içindir, lütfen hızlı aksiyon al.</p>
                                     </div>
                                 </div>
-                                {/* Sayacı burada çağırıyoruz */}
                                 <div className="text-right">
                                     <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Kalan Süre</p>
-                                    {/* NOT: Burada ad.expires (saat) değerinden tarih oluşturman gerekecek */}
-                                    <CountdownTimer expiresAt={new Date(new Date(ad.createdAt).getTime() + (ad.expires * 60 * 60 * 1000)).toISOString()} />
+                                    <CountdownTimer
+                                        expiresAt={expiresAt}
+                                        onComplete={() => router.push('/feed')}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -622,8 +631,12 @@ export default function AdDetailPage() {
 
                             <button
                                 onClick={handlePrimaryAction}
-                                className="w-full bg-cyan-500 text-black py-4 rounded-2xl font-bold hover:bg-cyan-400 transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-                                {ad.type === 'job' || ad.type === 'scholarship' ? 'Hemen Başvur' : 'Mesaj Gönder'}
+                                className={`w-full py-4 rounded-2xl font-bold transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)] ${
+                                    ad.type === 'urgent'
+                                        ? 'bg-rose-600 text-white hover:bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]'
+                                        : 'bg-cyan-500 text-black hover:bg-cyan-400'
+                                }`}>
+                                {ad.type === 'urgent' ? 'Hemen Yardım Et' : (ad.type === 'job' || ad.type === 'scholarship' ? 'Hemen Başvur' : 'Mesaj Gönder')}
                             </button>
                         </div>
                     </div>
