@@ -39,20 +39,21 @@ const fixEncodingAndFormat = (text: any) => {
 };
 
 export default function AdDetailPage() {
-
-    const expiresAt = getExpiresAt();
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
 
+    const [ad, setAd] = useState<any>(null);
+
     const getExpiresAt = () => {
-        if (ad.type !== 'urgent' || !ad.expires || isNaN(Number(ad.expires))) return null;
+        if (!ad || ad.type !== 'urgent' || !ad.expires || isNaN(Number(ad.expires))) return null;
         const createdAt = new Date(ad.createdAt);
         if (isNaN(createdAt.getTime())) return null;
         return new Date(createdAt.getTime() + (Number(ad.expires) * 60 * 60 * 1000)).toISOString();
     };
 
-    const [ad, setAd] = useState<any>(null);
+    const expiresAt = getExpiresAt();
+
     const [isLoading, setIsLoading] = useState(true);
     const [isMockData, setIsMockData] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
