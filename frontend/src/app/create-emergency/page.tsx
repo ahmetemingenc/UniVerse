@@ -50,7 +50,7 @@ export default function CreateEmergencyPage() {
             if (!response.ok) throw new Error('İlan oluşturulamadı');
 
             setSubmitStatus('success');
-            setTimeout(() => router.push('/feed'), 2000);
+            setTimeout(() => router.push('/feed'), 1000);
         } catch (error) {
             console.error("Error:", error);
             setSubmitStatus('error');
@@ -124,7 +124,7 @@ export default function CreateEmergencyPage() {
                         <label className="text-sm font-medium text-gray-400 ml-1 flex items-center space-x-2">
                             <Text size={16}/> <span>Açıklama</span>
                         </label>
-                        <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Sana nasıl ulaşabilirler?" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-rose-500/40 outline-none text-gray-200 resize-none transition-all"></textarea>
+                        <textarea rows={2} required value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Sana nasıl ulaşabilirler?" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-rose-500/40 outline-none text-gray-200 resize-none transition-all"></textarea>
                     </div>
 
                     <button type="submit" disabled={!isFormValid || isSubmitting} className={`w-full py-4 mt-6 font-black rounded-xl transition-all flex items-center justify-center space-x-2 ${!isFormValid || isSubmitting ? 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-70' : submitStatus === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.4)]'}`}>
