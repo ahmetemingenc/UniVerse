@@ -1,5 +1,4 @@
 import { Types } from 'mongoose'
-
 // ─── BASE ─────────────────────────────────────────────────────────────────────
 
 export interface IBaseListing {
@@ -12,7 +11,6 @@ export interface IBaseListing {
     price: number
     status: 'active' | 'sold' | 'closed' | 'expired'
     expires: number
-    is_urgent: boolean
     views: number
     save_count: number
     features: Record<string, string>
@@ -73,6 +71,14 @@ export interface IScholarshipListing extends IBaseListing {
     application_url: string | null
 }
 
+export interface IUrgentListing extends IBaseListing {
+    type: 'urgent'
+}
+
+export interface INoteListing extends IBaseListing {
+    type: 'note'
+    lecture: string
+}
 // ─── UNION ────────────────────────────────────────────────────────────────────
 
 export type IListing =
@@ -82,6 +88,8 @@ export type IListing =
     | ICourseListing
     | IJobListing
     | IScholarshipListing
+    | IUrgentListing
+    | INoteListing
 
 // ─── LISTING TYPE KEY ─────────────────────────────────────────────────────────
 
@@ -96,3 +104,5 @@ export const isCarpooling    = (l: IListing): l is ICarpoolingListing  => l.type
 export const isCourse           = (l: IListing): l is ICourseListing      => l.type === 'course'
 export const isJob                = (l: IListing): l is IJobListing         => l.type === 'job'
 export const isScholarship   = (l: IListing): l is IScholarshipListing => l.type === 'scholarship'
+export const isUrgentListing   = (l: IListing): l is IUrgentListing => l.type === 'urgent'
+export const isNoteListing   = (l: IListing): l is INoteListing => l.type === 'note'

@@ -71,6 +71,15 @@ const scholarshipSchema = baseListingSchema.extend({
     application_url: z.string().url().nullable().optional(),
 })
 
+const urgentSchema = baseListingSchema.extend({
+    type:            z.literal('urgent'),
+})
+
+const noteSchema = baseListingSchema.extend({
+    type:            z.literal('note'),
+    lecture:         z.string()
+})
+
 // ─── UNION ─────────────────────────────────────────────────────────────────
 
 export const createListingSchema = z.discriminatedUnion('type', [
@@ -79,21 +88,25 @@ export const createListingSchema = z.discriminatedUnion('type', [
     carpoolingSchema,
     courseSchema,
     jobSchema,
-    scholarshipSchema,]).superRefine((data, ctx) => {
-    // 1. Acil (is_urgent: true) ise expires zorunlu olmalı
-    if (data.is_urgent && !data.expires) {
+    scholarshipSchema,
+    urgentSchema,
+    noteSchema,]).superRefine((data, ctx) => {
+    const isUrgentType = data.type === 'urgent';
+
+    // 1. Acil (type: 'urgent') ise expires zorunlu olmalı
+    if (isUrgentType && !data.expires) {
         ctx.addIssue({
             code: "custom",
-            message: "İlan acil olduğunda bir geçerlilik süresi (expires) seçilmelidir.",
+            message: "Acil ilan tipinde bir geçerlilik süresi (expires) seçilmelidir.",
             path: ["expires"],
         });
     }
 
-    // 2. Acil değilse (is_urgent: false) ve expires gönderilmişse hata fırlat
-    if (!data.is_urgent && data.expires) {
+    // 2. Acil değilse ve expires gönderilmişse hata fırlat
+    if (!isUrgentType && data.expires) {
         ctx.addIssue({
             code: "custom",
-            message: "Normal ilanlar için geçerlilik süresi (expires) belirlenemez.",
+            message: "Normal ilanlar için geçerlilik süresi (expires) manuel belirlenemez.",
             path: ["expires"],
         });
     }
@@ -106,36 +119,16 @@ export const updateListingSchema = z.object({
     description: z.string().min(10).max(2000).optional(),
     location:    z.string().min(2).optional(),
     price:       z.coerce.number().min(0).optional(),
-    is_urgent:   z.coerce.boolean().optional(),
     expires:     z.coerce.number().pipe(z.union([z.literal(1), z.literal(6), z.literal(12), z.literal(24)])).optional(),
     status:      z.enum(['active', 'sold', 'closed', 'expired']).optional(),
-    retainedPhotos: z.any().optional(), // Frontend'den array, JSON veya string olarak gelebilir
-    orderedPhotos: z.any().optional(), // Frontend'den sıralama listesi JSON string veya array olarak gelebilir
+    retainedPhotos: z.any().optional(),
+    orderedPhotos: z.any().optional(),
     features: z.record(
         z.string().trim().min(1),
         z.string().trim().min(1).max(500)
     ).optional(),
-    // type değiştirilemiz — discriminator sabit kalır
-}) .superRefine((data, ctx) => {
-        // Update esnasında sadece data verildiyse kontrol et
-        if (data.is_urgent === true && data.expires === undefined) {
-             // Not: Normalde is_urgent true yapılıyorsa ve veritabanında expires yoksa sorun çıkabilir,
-             // bu yüzden güncellemede de ikisi beraber yollanmalı.
-             ctx.addIssue({
-                 code: "custom",
-                 message: "İlan acil (urgent) durumuna getiriliyorsa geçerlilik süresi (expires) sağlanmalıdır.",
-                 path: ["expires"],
-             });
-        }
-        if (data.is_urgent === false && data.expires !== undefined) {
-            ctx.addIssue({
-                code: "custom",
-                message: "Normal ilanlar için geçerlilik süresi (expires) güncellenemez.",
-                path: ["expires"],
-            });
-        }
-    });
-
+    // type değiştirilemez — discriminator sabit kalır
+}); // Dikkat: .superRefine() bloğunu tamamen sildik!
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 
 export type CreateListingInput = z.infer<typeof createListingSchema>

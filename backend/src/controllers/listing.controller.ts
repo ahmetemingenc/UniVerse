@@ -44,7 +44,7 @@ export const createListing = async (req: Request, res: Response): Promise<any> =
         }
 
         let expiresDate = new Date();
-        if (parsed.data.is_urgent) {
+        if (parsed.data.type === 'urgent') {
             expiresDate.setHours(expiresDate.getHours() + (parsed.data.expires || 24) ); // Acil ilanlar 24 saat
         } else {
             expiresDate.setMonth(expiresDate.getMonth() + 1); // Normal ilanlar 1 ay
@@ -197,7 +197,7 @@ export const getFeedListings = async (req: Request, res: Response): Promise<any>
         const listings = await Listing
             .find({
                 status: 'active',
-                is_urgent: false,
+                type: { $ne: 'urgent' }, // ACİL İLANLARI DIŞLA
                 is_deleted: { $ne: true },
                 $or: [
                     { expires: { $gt: new Date() } },
@@ -213,6 +213,36 @@ export const getFeedListings = async (req: Request, res: Response): Promise<any>
     } catch (error) {
         console.error('Get feed listings error:', error)
         return res.status(500).json({ error: 'Server error' })
+    }
+}
+
+export const getUrgentListings = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { page = '1', limit = '20' } = req.query;
+
+        // Güvenli Sayfalama
+        const pageNum = Math.max(1, Number(page) || 1);
+        const limitNum = Math.max(1, Number(limit) || 20);
+
+        const listings = await Listing
+            .find({
+                status: 'active',
+                is_deleted: { $ne: true },
+                type: 'urgent', // SADECE ACİL İLANLARI GETİR
+                $or: [
+                    { expires: { $gt: new Date() } },
+                    { expires: { $exists: false } }
+                ]
+            })
+            .sort({ createdAt: -1 }) // En acil (en yeni) olanlar üstte
+            .skip((pageNum - 1) * limitNum)
+            .limit(limitNum)
+            .populate('owner', 'username avatar account_type');
+
+        return res.json({ listings, page: pageNum });
+    } catch (error) {
+        console.error('Get urgent listings error:', error);
+        return res.status(500).json({ error: 'Server error' });
     }
 }
 
@@ -340,8 +370,15 @@ export const updateListing = async (req: Request, res: Response): Promise<any> =
             }
         }
 
-        const updateData: any = { ...parsed.data };//TODO: BURADA DÜZELTME LAZIM EXPIRES KISMI
+        const updateData: any = { ...parsed.data };
+
+        // SADECE ACİL (URGENT) İLANLARDA EXPIRES GÜNCELLENEBİLİR
         if (updateData.expires !== undefined) {
+            if (listing.get('type') !== 'urgent') {
+                return res.status(400).json({ error: "Normal ilanlar için geçerlilik süresi (expires) manuel olarak güncellenemez." });
+            }
+
+            // Eğer ilan cidden acilse, yeni süreyi şu andan itibaren hesapla
             const expiresDate = new Date();
             expiresDate.setHours(expiresDate.getHours() + updateData.expires);
             updateData.expires = expiresDate;
@@ -423,7 +460,7 @@ export const republishListing = async (req: Request, res: Response): Promise<any
         if (isExpired) {
             // 3. KURAL: Süresi dolmuşsa zamanı güncelle
             const expiresDate = new Date();
-            if (listing.is_urgent) {
+            if (listing.get('type') === 'urgent') {
                 expiresDate.setHours(expiresDate.getHours() + 24); // Acil ilanlara +24 Saat
             } else {
                 expiresDate.setMonth(expiresDate.getMonth() + 1); // Normal ilanlara +1 Ay
