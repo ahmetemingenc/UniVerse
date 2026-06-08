@@ -220,12 +220,12 @@ export const ScholarshipListing = Listing.discriminator(
 )
 
 export const UrgentListing = Listing.discriminator(
-    'Urgent',
+    'urgent',
     new mongoose.Schema({})
 )
 
 export const NoteListing = Listing.discriminator(
-    'Note',
+    'note',
     new mongoose.Schema({
         lecture: {
             type: String,
