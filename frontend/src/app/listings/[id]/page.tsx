@@ -379,24 +379,38 @@ export default function AdDetailPage() {
                                 <span>Değerlendirmeler ({comments.length})</span>
                             </h3>
 
-                            <form onSubmit={handleSubmitComment} className="mb-10 bg-white/5 border border-white/10 rounded-2xl p-5">
-                                <h4 className="text-sm font-bold text-gray-300 mb-3">Bu işlemi değerlendir:</h4>
-                                <div className="flex items-center space-x-2 mb-4">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <button key={star} type="button" onClick={() => setRating(star)} onMouseEnter={() => setHoveredStar(star)} onMouseLeave={() => setHoveredStar(0)} className="focus:outline-none transition-transform hover:scale-110">
-                                            <Star size={24} className={`transition-colors ${star <= (hoveredStar || rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-600'}`} />
+                            {ad.offerStatus === 'Accepted' ? (
+                                <form onSubmit={handleSubmitComment} className="mb-10 bg-white/5 border border-white/10 rounded-2xl p-5 animate-in fade-in duration-300">
+                                    <h4 className="text-sm font-bold text-gray-300 mb-3">Bu işlemi değerlendir:</h4>
+                                    <div className="flex items-center space-x-2 mb-4">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button key={star} type="button" onClick={() => setRating(star)} onMouseEnter={() => setHoveredStar(star)} onMouseLeave={() => setHoveredStar(0)} className="focus:outline-none transition-transform hover:scale-110">
+                                                <Star size={24} className={`transition-colors ${star <= (hoveredStar || rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-600'}`} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Satıcı ve işlem hakkındaki düşüncelerini paylaş..." className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 focus:border-emerald-500/50 outline-none text-gray-200 resize-none text-sm mb-3" rows={3}></textarea>
+
+                                    {commentError && <div className="mb-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-xs font-medium flex items-start gap-2"><AlertTriangle size={14} className="flex-shrink-0 mt-0.5" /><span>{commentError}</span></div>}
+                                    {commentSuccess && <div className="mb-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium flex items-center gap-2"><ShieldCheck size={14} className="flex-shrink-0" /><span>{commentSuccess}</span></div>}
+
+                                    <div className="flex justify-end">
+                                        <button type="submit" disabled={commentLoading} className="py-2.5 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#0B0F19] font-black text-sm transition-all shadow-[0_5px_15px_rgba(16,185,129,0.2)] disabled:opacity-50 flex items-center gap-2">
+                                            {commentLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} <span>Gönder</span>
                                         </button>
-                                    ))}
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="mb-10 bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+                                    <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-amber-500/20">
+                                        <ShieldCheck size={24} className="text-amber-500" />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-gray-200 mb-1">Değerlendirme Kapalı</h4>
+                                    <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                                        Bu ilana yorum yapabilmek ve puan verebilmek için satıcının size ait bir teklifi kabul etmiş olması gerekmektedir.
+                                    </p>
                                 </div>
-                                <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Satıcı ve işlem hakkındaki düşüncelerini paylaş..." className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 focus:border-emerald-500/50 outline-none text-gray-200 resize-none text-sm mb-3" rows={3}></textarea>
-                                {commentError && <div className="mb-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-xs font-medium flex items-start gap-2"><AlertTriangle size={14} className="flex-shrink-0 mt-0.5" /><span>{commentError}</span></div>}
-                                {commentSuccess && <div className="mb-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium flex items-center gap-2"><ShieldCheck size={14} className="flex-shrink-0" /><span>{commentSuccess}</span></div>}
-                                <div className="flex justify-end">
-                                    <button type="submit" disabled={commentLoading} className="py-2.5 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#0B0F19] font-black text-sm transition-all shadow-[0_5px_15px_rgba(16,185,129,0.2)] disabled:opacity-50 flex items-center gap-2">
-                                        {commentLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} <span>Gönder</span>
-                                    </button>
-                                </div>
-                            </form>
+                            )}
 
                             <div className="space-y-4">
                                 {comments.length === 0 ? (
