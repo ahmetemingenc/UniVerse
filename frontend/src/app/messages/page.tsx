@@ -18,11 +18,14 @@ const darkMapStyle = [
 
 const mapContainerStyle = { width: '100%', height: '100%', borderRadius: '0.75rem' };
 
+const LIBRARIES: ("places")[] = ["places"];
+
 function MessagesContent() {
     const router = useRouter();
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+        libraries: LIBRARIES
     });
 
     const searchParams = useSearchParams();
@@ -55,6 +58,8 @@ function MessagesContent() {
     const [offerPricePer, setOfferPricePer] = useState<'One Time' | 'Per Month' | 'Per Session'>('One Time');
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+
 
     // fullscreen scroll lock for conversation page
     useEffect(() => {
@@ -300,7 +305,7 @@ function MessagesContent() {
     };
 
     const handleLocationSubmit = (lat: number, lng: number) => {
-        const googleMapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+        const googleMapsUrl = `https://www.google.com/maps?q=$${lat},${lng}`;
         setIsSendingLocation(true);
         sendMessageToApi({ locationUrl: googleMapsUrl }).finally(() => {
             setIsSendingLocation(false);
