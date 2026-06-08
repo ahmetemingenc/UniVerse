@@ -6,7 +6,7 @@ import { Zap, Clock, AlertCircle, ArrowRight, Text, MapPin, Loader2 } from 'luci
 
 const durations = [
     { id: '1h', label: '1 Saat', value: 1, desc: 'Çok Acil' },
-    { id: '6h', label: '3 Saat', value: 6, desc: 'Kısa Süreli' },
+    { id: '6h', label: '6 Saat', value: 6, desc: 'Kısa Süreli' },
     { id: '12h', label: '12 Saat', value: 12, desc: 'Gün İçi' },
     { id: '24h', label: '24 Saat', value: 24, desc: 'Yarına Kadar' },
 ];
@@ -122,7 +122,7 @@ export default function CreateEmergencyPage() {
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-400 ml-1 flex items-center space-x-2">
-                            <Text size={16}/> <span>Açıklama</span>
+                            <Text size={16}/> <span>Açıklama <span className="text-rose-600">*</span></span>
                         </label>
                         <textarea rows={2} required value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Sana nasıl ulaşabilirler?" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-rose-500/40 outline-none text-gray-200 resize-none transition-all"></textarea>
                     </div>
