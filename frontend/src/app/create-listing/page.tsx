@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from '@react-google-maps/api';
 import {
     Briefcase, Car, Lock, ArrowRight, ArrowLeft,
     CheckCircle2, ImagePlus, TurkishLira, Calendar, MapPin,
     FileText, Award, Presentation, ShoppingBag, Home, Plus, X, Eye,
-    AlertTriangle, Link as LinkIcon, ListPlus, Tag, Map
+    AlertTriangle, Link as LinkIcon, ListPlus, Tag, Map, Search
 } from 'lucide-react';
 
 const categories = [
@@ -49,12 +49,10 @@ const PRESET_SECONDHAND_FEATURES = [
     { key: 'Kendi Özelliğini Ekle', options: [] }
 ];
 
-interface DynamicField {
-    id: string;
-    key: string;
-    value: string;
-    isCustom: boolean;
-}
+interface DynamicField { id: string; key: string; value: string; isCustom: boolean; }
+
+// React Hook'larının tekrar tekrar tetiklenmesini engellemek için dışarıda tanımlanmalı
+const LIBRARIES: ("places")[] = ["places"];
 
 export default function CreateListingWizard() {
     const router = useRouter();
@@ -62,19 +60,21 @@ export default function CreateListingWizard() {
     // ─── GOOGLE MAPS SETUP ───
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+        libraries: LIBRARIES // Arama (Places) eklentisi dahil edildi
     });
 
-    const defaultMapCenter = { lat: 38.4237, lng: 27.1428 }; // Varsayılan: İzmir Merkez
+    const defaultMapCenter = { lat: 38.4237, lng: 27.1428 }; // İzmir Merkez
 
-    // Map States
     const [generalLocation, setGeneralLocation] = useState<{lat: number, lng: number} | null>(null);
     const [originCoords, setOriginCoords] = useState<{lat: number, lng: number} | null>(null);
     const [destCoords, setDestCoords] = useState<{lat: number, lng: number} | null>(null);
     const [carpoolMarkerType, setCarpoolMarkerType] = useState<'origin' | 'dest'>('origin');
-    const [showMap, setShowMap] = useState(false); // Haritayı aç/kapat toggle'ı
+    const [showMap, setShowMap] = useState(false);
 
-    // Core States
+    // Arama Çubuğu Ref'i
+    const [autocompleteInfo, setAutocompleteInfo] = useState<google.maps.places.Autocomplete | null>(null);
+
     const [step, setStep] = useState(1);
     const [selectedCat, setSelectedCat] = useState<string | null>(null);
     const [isVerifiedStudent, setIsVerifiedStudent] = useState(false);
@@ -89,8 +89,7 @@ export default function CreateListingWizard() {
         title: '', description: '', price: '',
         origin: '', destination: '', departure_date: '', available_seats: '',
         application_url: '', deadline: '',
-        subject: '', format: '',
-        condition: '', secondhandCategory: '', subcategory: ''
+        subject: '', format: '', condition: '', secondhandCategory: '', subcategory: ''
     });
 
     const [districts, setDistricts] = useState<string[]>([]);
@@ -116,61 +115,59 @@ export default function CreateListingWizard() {
             if (!token) return;
             try {
                 const userRes = await fetch(`${API_URL}/api/auth/me`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
-                const text = await userRes.text();
-                try {
-                    const data = JSON.parse(text);
-                    if (userRes.ok) {
-                        const userData = data.user || data;
-                        setIsVerifiedStudent(userData.account_type === 'student' || !!userData.edu_email);
-                    }
-                } catch (e) { console.error("Auth Hata"); }
-            } catch (error) { console.error("Bağlantı hatası:", error); }
+                const data = await userRes.json();
+                if (userRes.ok) setIsVerifiedStudent(data.user?.account_type === 'student' || !!data.user?.edu_email || data.account_type === 'student');
+            } catch (error) { console.error("Auth Hata:", error); }
         };
         checkAuth();
     }, []);
 
     useEffect(() => {
         const fetchDistricts = async () => {
-            if (!selectedCityId) {
-                setDistricts([]);
-                return;
-            }
+            if (!selectedCityId) return setDistricts([]);
             try {
-                const token = localStorage.getItem('accessToken');
-                const isValidToken = token && token !== 'null' && token !== 'undefined';
-
-                // DÜZELTME: Doğrudan selectedCityId'yi kullanıyoruz ("04" olarak gidecek)
-                const res = await fetch(`${API_URL}/api/misc/districts/${selectedCityId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(isValidToken && { 'Authorization': `Bearer ${token}` })
-                    }
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    setDistricts(data);
-                } else {
-                    console.error("İlçeler çekilemedi. Hata kodu:", res.status);
-                }
-            } catch (error) {
-                console.error("İlçeler çekilirken ağ hatası:", error);
-            }
+                const res = await fetch(`${API_URL}/api/misc/districts/${selectedCityId}`);
+                if (res.ok) setDistricts(await res.json());
+            } catch (error) { console.error("İlçe Hata:", error); }
         };
         fetchDistricts();
     }, [selectedCityId]);
 
-    // criteria & features handle
+    // ─── HARİTADA YER ARAMA FONKSİYONU ───
+    const onLoadAutocomplete = (autocomplete: google.maps.places.Autocomplete) => {
+        setAutocompleteInfo(autocomplete);
+    };
+
+    const onPlaceChanged = () => {
+        if (autocompleteInfo !== null) {
+            const place = autocompleteInfo.getPlace();
+            if (place.geometry && place.geometry.location) {
+                const newLat = place.geometry.location.lat();
+                const newLng = place.geometry.location.lng();
+
+                // Seçilen kategorinin haritasına göre hedef state'i güncelle
+                if (selectedCat === 'carpool') {
+                    if (carpoolMarkerType === 'origin') {
+                        setOriginCoords({ lat: newLat, lng: newLng });
+                        if(place.name) setFormData(prev => ({...prev, origin: place.name || ''}));
+                    } else {
+                        setDestCoords({ lat: newLat, lng: newLng });
+                        if(place.name) setFormData(prev => ({...prev, destination: place.name || ''}));
+                    }
+                } else {
+                    setGeneralLocation({ lat: newLat, lng: newLng });
+                }
+            }
+        }
+    };
+
     const handleAddCriterion = () => {
         let finalKey = currentCriterionKey === 'Kendi Kriterini Ekle' ? customCriterionKeyInput.trim() : currentCriterionKey;
         let finalValue = currentCriterionValue.trim();
         if (!finalKey || !finalValue) return;
         if (criteriaList.some(c => c.key === finalKey)) { alert('Bu kriteri zaten eklediniz.'); return; }
-
         setCriteriaList(prev => [...prev, { id: Date.now().toString(), key: finalKey, value: finalValue, isCustom: currentCriterionKey === 'Kendi Kriterini Ekle' }]);
         setCurrentCriterionKey(''); setCurrentCriterionValue(''); setCustomCriterionKeyInput('');
     };
@@ -181,7 +178,6 @@ export default function CreateListingWizard() {
         let finalValue = currentFeatureValue.trim();
         if (!finalKey || !finalValue) return;
         if (featuresList.some(c => c.key === finalKey)) { alert('Bu özelliği zaten eklediniz.'); return; }
-
         setFeaturesList(prev => [...prev, { id: Date.now().toString(), key: finalKey, value: finalValue, isCustom: currentFeatureKey === 'Kendi Özelliğini Ekle' }]);
         setCurrentFeatureKey(''); setCurrentFeatureValue(''); setCustomFeatureKeyInput('');
     };
@@ -215,18 +211,13 @@ export default function CreateListingWizard() {
 
     const nextStep = () => setStep((prev) => Math.min(prev + 1, 4));
     const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
-
     const handleFormChange = (key: string, value: string) => setFormData(prev => ({ ...prev, [key]: value }));
 
     const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const fileArray = Array.from(e.target.files).slice(0, 3);
             setMediaFiles(fileArray);
-            const previews = fileArray.map(file => ({
-                url: URL.createObjectURL(file),
-                type: file.type.startsWith('video/') ? 'video' : 'image'
-            }));
-            setMediaPreviews(previews);
+            setMediaPreviews(fileArray.map(file => ({ url: URL.createObjectURL(file), type: file.type.startsWith('video/') ? 'video' : 'image' })));
         }
     };
 
@@ -236,10 +227,7 @@ export default function CreateListingWizard() {
     };
 
     const submitListing = async () => {
-        setIsSubmitting(true);
-        setSubmitStatus('idle');
-        setSubmitError(null);
-
+        setIsSubmitting(true); setSubmitStatus('idle'); setSubmitError(null);
         try {
             const token = localStorage.getItem('accessToken');
             if (!token) throw new Error('Oturum bulunamadı. Lütfen giriş yapın.');
@@ -255,95 +243,60 @@ export default function CreateListingWizard() {
             submitData.append('description', formData.description);
             submitData.append('price', formData.price || '0');
 
-            // --- LOKASYON & HARİTA ENTEGRASYONU ---
             let finalLocation = 'Kampüs İçi';
-
             if (city && district) {
                 finalLocation = `${district}, ${city}`;
-                // Normal kategorilerde tekli harita seçimi varsa:
-                if (generalLocation) {
-                    finalLocation += ` | Harita: https://www.google.com/maps/search/?api=1&query=${generalLocation.lat},${generalLocation.lng}`;
-                }
-            }
-            else if (schemaType === 'carpooling') {
-                // Carpool için rotaları (metin + link) güncelliyoruz
+                if (generalLocation) finalLocation += ` | Harita: https://www.google.com/maps/search/?api=1&query=$${generalLocation.lat},${generalLocation.lng}`;
+            } else if (schemaType === 'carpooling') {
                 let o = formData.origin;
-                if (originCoords) o += ` (Harita: https://www.google.com/maps/search/?api=1&query=${originCoords.lat},${originCoords.lng})`;
-
+                if (originCoords) o += ` (Harita: https://www.google.com/maps/search/?api=1&query=$${originCoords.lat},${originCoords.lng})`;
                 let d = formData.destination;
-                if (destCoords) d += ` (Harita: https://www.google.com/maps/search/?api=1&query=${destCoords.lat},${destCoords.lng})`;
-
+                if (destCoords) d += ` (Harita: https://www.google.com/maps/search/?api=1&query=$${destCoords.lat},${destCoords.lng})`;
                 finalLocation = `${formData.origin} -> ${formData.destination}`;
-
-                // Backend modelindeki alanları ezerek linkli hallerini gönderiyoruz
                 submitData.append('origin', o);
                 submitData.append('destination', d);
                 submitData.append('departure_date', new Date(formData.departure_date).toISOString());
                 submitData.append('available_seats', formData.available_seats);
             }
 
-            if (schemaType !== 'carpooling') {
-                submitData.append('location', finalLocation);
-            }
+            if (schemaType !== 'carpooling') submitData.append('location', finalLocation);
 
-            // Geri kalan formData işlemlerini ekle
-            if (featuresList.length > 0) {
-                featuresList.forEach(feature => { submitData.append(`features[${feature.key}]`, feature.value); });
-            }
+            featuresList.forEach(feature => submitData.append(`features[${feature.key}]`, feature.value));
 
             if (schemaType === 'secondhand') {
                 submitData.append('condition', formData.condition);
                 submitData.append('category', selectedCat === 'notes' ? 'textbooks_and_notes' : formData.secondhandCategory);
                 if (formData.subcategory) submitData.append('subcategory', formData.subcategory);
-            }
-            else if (schemaType === 'roommate') {
-                if (criteriaList.length > 0) {
-                    criteriaList.forEach(criterion => { submitData.append(`criteria[${criterion.key}]`, criterion.value); });
-                }
-            }
-            else if (schemaType === 'course') {
+            } else if (schemaType === 'roommate') {
+                criteriaList.forEach(criterion => submitData.append(`criteria[${criterion.key}]`, criterion.value));
+            } else if (schemaType === 'course') {
                 submitData.append('subject', formData.subject);
                 submitData.append('format', formData.format);
-            }
-            else if (schemaType === 'job' || schemaType === 'scholarship') {
+            } else if (schemaType === 'job' || schemaType === 'scholarship') {
                 if (formData.application_url) submitData.append('application_url', formData.application_url);
                 if (formData.deadline) submitData.append('deadline', new Date(formData.deadline).toISOString());
             }
 
-            mediaFiles.forEach(file => { submitData.append('photos', file); });
+            mediaFiles.forEach(file => submitData.append('photos', file));
 
-            const response = await fetch(`${API_URL}/api/listing`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: submitData
-            });
-
+            const response = await fetch(`${API_URL}/api/listing`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: submitData });
             const text = await response.text();
-            let data;
-            try { data = JSON.parse(text); } catch (e) { throw new Error(`Yanlış Endpoint veya Sunucu Hatası.`); }
-
+            let data; try { data = JSON.parse(text); } catch (e) { throw new Error(`Sunucu Hatası.`); }
             if (!response.ok) throw new Error(data.message || data.error || 'İlan oluşturulurken hata oluştu.');
 
             setSubmitStatus('success');
             setTimeout(() => { router.push('/feed'); }, 2000);
 
         } catch (error: any) {
-            console.error("İlan gönderme hatası:", error);
-            setSubmitError(error.message);
-            setSubmitStatus('error');
-        } finally {
-            setIsSubmitting(false);
-        }
+            setSubmitError(error.message); setSubmitStatus('error');
+        } finally { setIsSubmitting(false); }
     };
 
     const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const targetId = e.target.value;
-        setSelectedCityId(targetId);
-        const cityName = TURKISH_CITIES.find(c => c.id === targetId)?.name || '';
-        setCity(cityName); setDistrict('');
+        const targetId = e.target.value; setSelectedCityId(targetId);
+        setCity(TURKISH_CITIES.find(c => c.id === targetId)?.name || ''); setDistrict('');
     };
 
-    // Dinamik Harita ve Lokasyon Render Fonksiyonu
     const renderLocationWithMap = (accentColor: string) => (
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -363,19 +316,30 @@ export default function CreateListingWizard() {
                 </div>
             </div>
 
-            {/* HARİTA AÇ/KAPAT BUTONU */}
-            <button
-                type="button"
-                onClick={() => setShowMap(!showMap)}
-                className={`flex items-center gap-2 text-sm font-bold transition-colors ${showMap ? 'text-rose-400' : 'text-blue-400 hover:text-blue-300'}`}
-            >
+            <button type="button" onClick={() => setShowMap(!showMap)} className={`flex items-center gap-2 text-sm font-bold transition-colors ${showMap ? 'text-rose-400' : 'text-blue-400 hover:text-blue-300'}`}>
                 <Map size={18} /> {showMap ? 'Haritayı Gizle' : 'Haritada Nokta İşaretle (Opsiyonel)'}
             </button>
 
-            {/* GENEL KATEGORİLER İÇİN HARİTA ALANI */}
             {showMap && (
                 <div className="bg-black/40 border border-white/10 rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-300">
-                    <p className="text-xs text-gray-400 mb-3">İlanını vereceğin eşyanın veya evin tam konumunu seçerek alıcıların işini kolaylaştırabilirsin.</p>
+                    <p className="text-xs text-gray-400 mb-3">İlanını vereceğin yerin konumunu seç veya arama kutusuna yazarak haritayı oraya kaydır.</p>
+
+                    {/* YENİ: ARAMA ÇUBUĞU */}
+                    {isLoaded && (
+                        <div className="mb-4 relative">
+                            <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder="Mekan veya adres ara (Örn: Buca Metro)"
+                                        className="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none text-white focus:border-cyan-500/50"
+                                    />
+                                </div>
+                            </Autocomplete>
+                        </div>
+                    )}
+
                     {isLoaded ? (
                         <div className="rounded-xl overflow-hidden border border-white/10 h-[250px] relative">
                             <GoogleMap
@@ -389,11 +353,8 @@ export default function CreateListingWizard() {
                             </GoogleMap>
                         </div>
                     ) : (
-                        <div className="h-[250px] bg-white/5 animate-pulse rounded-xl flex items-center justify-center text-gray-500 text-sm">
-                            Harita Yükleniyor...
-                        </div>
+                        <div className="h-[250px] bg-white/5 animate-pulse rounded-xl flex items-center justify-center text-gray-500 text-sm">Harita Yükleniyor...</div>
                     )}
-                    {generalLocation && <p className="text-xs font-bold text-emerald-400 mt-2 flex items-center gap-1"><CheckCircle2 size={14}/> Konum başarıyla haritaya eklendi.</p>}
                 </div>
             )}
         </div>
@@ -490,7 +451,7 @@ export default function CreateListingWizard() {
                             </div>
                         )}
 
-                        {/* CARPOOL - Çift Harita Özelliği */}
+                        {/* CARPOOL */}
                         {selectedCat === 'carpool' && (
                             <div className="space-y-6 border-l-2 border-emerald-500 pl-4 animate-in zoom-in-95 duration-300">
                                 <div className="grid grid-cols-2 gap-4">
@@ -514,7 +475,6 @@ export default function CreateListingWizard() {
                                     </div>
                                 </div>
 
-                                {/* CARPOOL ÖZEL HARİTA BÖLÜMÜ */}
                                 <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 mt-2">
                                     <label className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2"><MapPin size={16}/> Rotayı Haritada İşaretle (Opsiyonel)</label>
 
@@ -535,6 +495,22 @@ export default function CreateListingWizard() {
                                         </button>
                                     </div>
 
+                                    {/* YENİ: CARPOOL ARAMA ÇUBUĞU */}
+                                    {isLoaded && (
+                                        <div className="mb-4">
+                                            <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+                                                    <input
+                                                        type="text"
+                                                        placeholder={carpoolMarkerType === 'origin' ? "Kalkış noktasını ara (Örn: Buca)" : "Varış noktasını ara (Örn: Bornova)"}
+                                                        className="w-full bg-black/60 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none text-white focus:border-emerald-500/50"
+                                                    />
+                                                </div>
+                                            </Autocomplete>
+                                        </div>
+                                    )}
+
                                     {isLoaded ? (
                                         <div className="rounded-xl overflow-hidden border border-white/10 h-[250px] relative">
                                             <div className="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-xs text-white font-medium">
@@ -543,7 +519,7 @@ export default function CreateListingWizard() {
                                             <GoogleMap
                                                 mapContainerStyle={{ width: '100%', height: '100%' }}
                                                 center={carpoolMarkerType === 'origin' && originCoords ? originCoords : carpoolMarkerType === 'dest' && destCoords ? destCoords : defaultMapCenter}
-                                                zoom={originCoords || destCoords ? 14 : 12}
+                                                zoom={originCoords || destCoords ? 15 : 12}
                                                 onClick={(e) => {
                                                     if (carpoolMarkerType === 'origin') setOriginCoords({ lat: e.latLng!.lat(), lng: e.latLng!.lng() });
                                                     else setDestCoords({ lat: e.latLng!.lat(), lng: e.latLng!.lng() });
@@ -555,9 +531,7 @@ export default function CreateListingWizard() {
                                             </GoogleMap>
                                         </div>
                                     ) : (
-                                        <div className="h-[250px] bg-white/5 animate-pulse rounded-xl flex items-center justify-center text-gray-500 text-sm">
-                                            Harita Yükleniyor...
-                                        </div>
+                                        <div className="h-[250px] bg-white/5 animate-pulse rounded-xl flex items-center justify-center text-gray-500 text-sm">Harita Yükleniyor...</div>
                                     )}
                                 </div>
                             </div>
@@ -571,13 +545,11 @@ export default function CreateListingWizard() {
                                     {renderLocationWithMap('text-teal-400')}
                                 </div>
 
-                                {/* features */}
                                 <div className="pt-4 border-t border-white/10 space-y-4">
                                     <div>
                                         <h4 className="text-sm font-bold text-teal-400 mb-1 flex items-center gap-2"><Tag size={16}/> Evin Fiziksel Özellikleri</h4>
                                         <p className="text-xs text-gray-500 mb-4">Oda sayısı, bulunduğu kat, bina yaşı veya metrekare gibi özellikleri ekle.</p>
                                     </div>
-
                                     <div className="flex flex-col sm:flex-row gap-3 items-end bg-white/5 p-4 rounded-xl border border-white/10">
                                         <div className="w-full sm:w-1/3 space-y-1">
                                             <label className="text-xs text-gray-400">Özellik Seç <span className="text-rose-500">*</span></label>
@@ -589,7 +561,6 @@ export default function CreateListingWizard() {
                                                 {PRESET_ROOMMATE_FEATURES.map(c => <option key={c.key} value={c.key} className="bg-gray-900">{c.key}</option>)}
                                             </select>
                                         </div>
-
                                         <div className="w-full sm:flex-1 space-y-1">
                                             {currentFeatureKey === 'Kendi Özelliğini Ekle' ? (
                                                 <div className="flex gap-2">
@@ -616,12 +587,10 @@ export default function CreateListingWizard() {
                                                 </>
                                             )}
                                         </div>
-
                                         <button onClick={handleAddFeature} disabled={!currentFeatureKey || (currentFeatureKey === 'Kendi Özelliğini Ekle' && (!customFeatureKeyInput || !currentFeatureValue)) || (currentFeatureKey !== 'Kendi Özelliğini Ekle' && !currentFeatureValue)}
                                                 className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 disabled:bg-gray-700 disabled:text-gray-500 text-black font-bold rounded-lg text-sm transition-colors flex-shrink-0"
                                         >Ekle</button>
                                     </div>
-
                                     {featuresList.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-4">
                                             {featuresList.map(c => (
@@ -637,13 +606,11 @@ export default function CreateListingWizard() {
                                     )}
                                 </div>
 
-                                {/* roommate criteria */}
                                 <div className="pt-4 border-t border-white/10 space-y-4">
                                     <div>
                                         <h4 className="text-sm font-bold text-teal-400 mb-1 flex items-center gap-2"><ListPlus size={16}/> Ev Arkadaşı Kriterleri</h4>
                                         <p className="text-xs text-gray-500 mb-4">Aradığın ev arkadaşı için sigara, misafir veya evcil hayvan gibi beklentilerini ekle.</p>
                                     </div>
-
                                     <div className="flex flex-col sm:flex-row gap-3 items-end bg-white/5 p-4 rounded-xl border border-white/10">
                                         <div className="w-full sm:w-1/3 space-y-1">
                                             <label className="text-xs text-gray-400">Kriter Seç <span className="text-rose-500">*</span></label>
@@ -655,7 +622,6 @@ export default function CreateListingWizard() {
                                                 {PRESET_CRITERIA.map(c => <option key={c.key} value={c.key} className="bg-gray-900">{c.key}</option>)}
                                             </select>
                                         </div>
-
                                         <div className="w-full sm:flex-1 space-y-1">
                                             {currentCriterionKey === 'Kendi Kriterini Ekle' ? (
                                                 <div className="flex gap-2">
@@ -682,12 +648,10 @@ export default function CreateListingWizard() {
                                                 </>
                                             )}
                                         </div>
-
                                         <button onClick={handleAddCriterion} disabled={!currentCriterionKey || (currentCriterionKey === 'Kendi Kriterini Ekle' && (!customCriterionKeyInput || !currentCriterionValue)) || (currentCriterionKey !== 'Kendi Kriterini Ekle' && !currentCriterionValue)}
                                                 className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 disabled:bg-gray-700 disabled:text-gray-500 text-black font-bold rounded-lg text-sm transition-colors flex-shrink-0"
                                         >Ekle</button>
                                     </div>
-
                                     {criteriaList.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-4">
                                             {criteriaList.map(c => (
@@ -769,7 +733,6 @@ export default function CreateListingWizard() {
                                             <h4 className="text-sm font-bold text-violet-400 mb-1 flex items-center gap-2"><Tag size={16}/> Ürün Özellikleri</h4>
                                             <p className="text-xs text-gray-500 mb-4">Ürünün markası, modeli, garanti durumu gibi ek özellikleri ekle.</p>
                                         </div>
-
                                         <div className="flex flex-col sm:flex-row gap-3 items-end bg-white/5 p-4 rounded-xl border border-white/10">
                                             <div className="w-full sm:w-1/3 space-y-1">
                                                 <label className="text-xs text-gray-400">Özellik Seç <span className="text-rose-500">*</span></label>
@@ -781,7 +744,6 @@ export default function CreateListingWizard() {
                                                     {PRESET_SECONDHAND_FEATURES.map(c => <option key={c.key} value={c.key} className="bg-gray-900">{c.key}</option>)}
                                                 </select>
                                             </div>
-
                                             <div className="w-full sm:flex-1 space-y-1">
                                                 {currentFeatureKey === 'Kendi Özelliğini Ekle' ? (
                                                     <div className="flex gap-2">
@@ -808,12 +770,10 @@ export default function CreateListingWizard() {
                                                     </>
                                                 )}
                                             </div>
-
                                             <button onClick={handleAddFeature} disabled={!currentFeatureKey || (currentFeatureKey === 'Kendi Özelliğini Ekle' && (!customFeatureKeyInput || !currentFeatureValue)) || (currentFeatureKey !== 'Kendi Özelliğini Ekle' && !currentFeatureValue)}
                                                     className="px-4 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:bg-gray-700 disabled:text-gray-500 text-black font-bold rounded-lg text-sm transition-colors flex-shrink-0"
                                             >Ekle</button>
                                         </div>
-
                                         {featuresList.length > 0 && (
                                             <div className="flex flex-wrap gap-2 mt-4">
                                                 {featuresList.map(c => (
@@ -839,7 +799,6 @@ export default function CreateListingWizard() {
                     </div>
                 )}
 
-                {/* step 3 and 4 */}
                 {step === 3 && (
                     <div className="animate-in fade-in slide-in-from-right-8 duration-500 space-y-8">
                         <h2 className="text-xl font-bold text-white mb-2">Medya ve Fiyatlandırma</h2>
