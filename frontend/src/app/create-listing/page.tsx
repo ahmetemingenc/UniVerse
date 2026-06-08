@@ -141,9 +141,9 @@ export default function CreateListingWizard() {
             try {
                 const token = localStorage.getItem('accessToken');
                 const isValidToken = token && token !== 'null' && token !== 'undefined';
-                const formattedCityId = parseInt(selectedCityId, 10).toString();
 
-                const res = await fetch(`${API_URL}/api/misc/districts/${formattedCityId}`, {
+                // DÜZELTME: Doğrudan selectedCityId'yi kullanıyoruz ("04" olarak gidecek)
+                const res = await fetch(`${API_URL}/api/misc/districts/${selectedCityId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -154,8 +154,12 @@ export default function CreateListingWizard() {
                 if (res.ok) {
                     const data = await res.json();
                     setDistricts(data);
+                } else {
+                    console.error("İlçeler çekilemedi. Hata kodu:", res.status);
                 }
-            } catch (error) { console.error("İlçeler çekilirken ağ hatası:", error); }
+            } catch (error) {
+                console.error("İlçeler çekilirken ağ hatası:", error);
+            }
         };
         fetchDistricts();
     }, [selectedCityId]);
