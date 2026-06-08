@@ -78,7 +78,7 @@ export default function LoginPage() {
 
                 setTimeout(() => {
                     router.push('/feed');
-                }, 2000);
+                }, 1000);
 
             } else {
                 // incomplete profile: save temp token and show warning box

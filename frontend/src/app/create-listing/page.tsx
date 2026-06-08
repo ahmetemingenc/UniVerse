@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import {
     Briefcase, Car, Lock, ArrowRight, ArrowLeft,
     CheckCircle2, ImagePlus, TurkishLira, Calendar, MapPin,
     FileText, Award, Presentation, ShoppingBag, Home, Plus, X, Eye,
-    AlertTriangle, Link as LinkIcon, ListPlus, Tag
+    AlertTriangle, Link as LinkIcon, ListPlus, Tag, Map
 } from 'lucide-react';
 
 const categories = [
@@ -24,7 +25,6 @@ const TURKISH_CITIES = [
     {id:"01",name:"Adana"},{id:"02",name:"Adıyaman"},{id:"03",name:"Afyonkarahisar"},{id:"04",name:"Ağrı"},{id:"05",name:"Amasya"},{id:"06",name:"Ankara"},{id:"07",name:"Antalya"},{id:"08",name:"Artvin"},{id:"09",name:"Aydın"},{id:"10",name:"Balıkesir"},{id:"11",name:"Bilecik"},{id:"12",name:"Bingöl"},{id:"13",name:"Bitlis"},{id:"14",name:"Bolu"},{id:"15",name:"Burdur"},{id:"16",name:"Bursa"},{id:"17",name:"Çanakkale"},{id:"18",name:"Çankırı"},{id:"19",name:"Çorum"},{id:"20",name:"Denizli"},{id:"21",name:"Diyarbakır"},{id:"22",name:"Edirne"},{id:"23",name:"Elazığ"},{id:"24",name:"Erzincan"},{id:"25",name:"Erzurum"},{id:"26",name:"Eskişehir"},{id:"27",name:"Gaziantep"},{id:"28",name:"Giresun"},{id:"29",name:"Gümüşhane"},{id:"30",name:"Hakkari"},{id:"31",name:"Hatay"},{id:"32",name:"Isparta"},{id:"33",name:"Mersin"},{id:"34",name:"İstanbul"},{id:"35",name:"İzmir"},{id:"36",name:"Kars"},{id:"37",name:"Kastamonu"},{id:"38",name:"Kayseri"},{id:"39",name:"Kırklareli"},{id:"40",name:"Kırşehir"},{id:"41",name:"Kocaeli"},{id:"42",name:"Konya"},{id:"43",name:"Kütahya"},{id:"44",name:"Malatya"},{id:"45",name:"Manisa"},{id:"46",name:"Kahramanmaraş"},{id:"47",name:"Mardin"},{id:"48",name:"Muğla"},{id:"49",name:"Muş"},{id:"50",name:"Nevşehir"},{id:"51",name:"Niğde"},{id:"52",name:"Ordu"},{id:"53",name:"Rize"},{id:"54",name:"Sakarya"},{id:"55",name:"Samsun"},{id:"56",name:"Siirt"},{id:"57",name:"Sinop"},{id:"58",name:"Sivas"},{id:"59",name:"Tekirdağ"},{id:"60",name:"Tokat"},{id:"61",name:"Trabzon"},{id:"62",name:"Tunceli"},{id:"63",name:"Şanlıurfa"},{id:"64",name:"Uşak"},{id:"65",name:"Van"},{id:"66",name:"Yozgat"},{id:"67",name:"Zonguldak"},{id:"68",name:"Aksaray"},{id:"69",name:"Bayburt"},{id:"70",name:"Karaman"},{id:"71",name:"Kırıkkale"},{id:"72",name:"Batman"},{id:"73",name:"Şırnak"},{id:"74",name:"Bartın"},{id:"75",name:"Ardahan"},{id:"76",name:"Iğdır"},{id:"77",name:"Yalova"},{id:"78",name:"Karabük"},{id:"79",name:"Kilis"},{id:"80",name:"Osmaniye"},{id:"81",name:"Düzce"}
 ];
 
-// PRESET KRİTERLER (Criteria - Kişisel Beklentiler)
 const PRESET_CRITERIA = [
     { key: 'Sigara Kullanımı', options: ['Kullanmıyorum, istemiyorum', 'Sadece balkonda/dışarıda', 'Farketmez', 'Kullanıyorum'] },
     { key: 'Evcil Hayvan', options: ['Hayır, alerjim var', 'Sadece kedi/kuş vs.', 'Evet, var', 'Farketmez'] },
@@ -34,20 +34,19 @@ const PRESET_CRITERIA = [
     { key: 'Kendi Kriterini Ekle', options: [] }
 ];
 
-// PRESET ÖZELLİKLER (Features - Fiziksel Durumlar)
 const PRESET_ROOMMATE_FEATURES = [
     { key: 'Oda Sayısı', options: ['1+0', '1+1', '2+1', '3+1', '4+1 ve üzeri'] },
     { key: 'Isıtma', options: ['Doğalgaz (Kombi)', 'Merkezi Sistem', 'Klima', 'Soba', 'Elektrikli'] },
     { key: 'Eşya Durumu', options: ['Tam Eşyalı', 'Kısmi Eşyalı', 'Sadece Beyaz Eşya', 'Boş'] },
     { key: 'Bulunduğu Kat', options: ['Bodrum / Yarı Bodrum', 'Zemin Kat', '1-3. Kat', '4-6. Kat', '7+ Kat'] },
     { key: 'Bina Yaşı', options: ['0-5 Yıl', '6-10 Yıl', '11-20 Yıl', '21+ Yıl'] },
-    { key: 'Kendi Özelliğini Ekle', options: [] } // Örn: Metrekare
+    { key: 'Kendi Özelliğini Ekle', options: [] }
 ];
 
 const PRESET_SECONDHAND_FEATURES = [
     { key: 'Garanti Durumu', options: ['Devam Ediyor', 'Süresi Bitti', 'Yurtdışı/Garantisiz'] },
     { key: 'Kutu ve Fatura', options: ['İkisi de var', 'Sadece Kutu', 'Sadece Fatura', 'İkisi de yok'] },
-    { key: 'Kendi Özelliğini Ekle', options: [] } // Örn: Marka, Model, Renk
+    { key: 'Kendi Özelliğini Ekle', options: [] }
 ];
 
 interface DynamicField {
@@ -60,6 +59,22 @@ interface DynamicField {
 export default function CreateListingWizard() {
     const router = useRouter();
 
+    // ─── GOOGLE MAPS SETUP ───
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
+    });
+
+    const defaultMapCenter = { lat: 38.4237, lng: 27.1428 }; // Varsayılan: İzmir Merkez
+
+    // Map States
+    const [generalLocation, setGeneralLocation] = useState<{lat: number, lng: number} | null>(null);
+    const [originCoords, setOriginCoords] = useState<{lat: number, lng: number} | null>(null);
+    const [destCoords, setDestCoords] = useState<{lat: number, lng: number} | null>(null);
+    const [carpoolMarkerType, setCarpoolMarkerType] = useState<'origin' | 'dest'>('origin');
+    const [showMap, setShowMap] = useState(false); // Haritayı aç/kapat toggle'ı
+
+    // Core States
     const [step, setStep] = useState(1);
     const [selectedCat, setSelectedCat] = useState<string | null>(null);
     const [isVerifiedStudent, setIsVerifiedStudent] = useState(false);
@@ -83,7 +98,6 @@ export default function CreateListingWizard() {
     const [city, setCity] = useState('');
     const [district, setDistrict] = useState('');
 
-    // dynamic fields for roommate criteria and secondhand features
     const [criteriaList, setCriteriaList] = useState<DynamicField[]>([]);
     const [currentCriterionKey, setCurrentCriterionKey] = useState('');
     const [currentCriterionValue, setCurrentCriterionValue] = useState('');
@@ -124,11 +138,9 @@ export default function CreateListingWizard() {
                 setDistricts([]);
                 return;
             }
-
             try {
                 const token = localStorage.getItem('accessToken');
                 const isValidToken = token && token !== 'null' && token !== 'undefined';
-
                 const formattedCityId = parseInt(selectedCityId, 10).toString();
 
                 const res = await fetch(`${API_URL}/api/misc/districts/${formattedCityId}`, {
@@ -142,18 +154,13 @@ export default function CreateListingWizard() {
                 if (res.ok) {
                     const data = await res.json();
                     setDistricts(data);
-                } else {
-                    console.error(`İlçeler çekilemedi. Sunucu durumu: ${res.status}`);
                 }
-            } catch (error) {
-                console.error("İlçeler çekilirken ağ hatası:", error);
-            }
+            } catch (error) { console.error("İlçeler çekilirken ağ hatası:", error); }
         };
-
         fetchDistricts();
     }, [selectedCityId]);
 
-    // criteria handle
+    // criteria & features handle
     const handleAddCriterion = () => {
         let finalKey = currentCriterionKey === 'Kendi Kriterini Ekle' ? customCriterionKeyInput.trim() : currentCriterionKey;
         let finalValue = currentCriterionValue.trim();
@@ -165,7 +172,6 @@ export default function CreateListingWizard() {
     };
     const handleRemoveCriterion = (idToRemove: string) => setCriteriaList(prev => prev.filter(c => c.id !== idToRemove));
 
-    // feature handle
     const handleAddFeature = () => {
         let finalKey = currentFeatureKey === 'Kendi Özelliğini Ekle' ? customFeatureKeyInput.trim() : currentFeatureKey;
         let finalValue = currentFeatureValue.trim();
@@ -177,17 +183,16 @@ export default function CreateListingWizard() {
     };
     const handleRemoveFeature = (idToRemove: string) => setFeaturesList(prev => prev.filter(c => c.id !== idToRemove));
 
-
     const isStep2Valid = () => {
         if (!formData.title.trim() || !formData.description.trim()) return false;
         switch (selectedCat) {
             case 'job': return !!(city && district);
             case 'scholarship': return true;
-            case 'carpool': return formData.origin && formData.destination && formData.departure_date && formData.available_seats;
+            case 'carpool': return !!(formData.origin && formData.destination && formData.departure_date && formData.available_seats);
             case 'roommate': return !!(city && district);
-            case 'tutoring': return formData.subject && formData.format;
-            case 'notes': return formData.subcategory && formData.condition;
-            case 'secondhand': return city && district && formData.condition && formData.secondhandCategory;
+            case 'tutoring': return !!(formData.subject && formData.format);
+            case 'notes': return !!(formData.subcategory && formData.condition);
+            case 'secondhand': return !!(city && district && formData.condition && formData.secondhandCategory);
             default: return false;
         }
     };
@@ -246,15 +251,40 @@ export default function CreateListingWizard() {
             submitData.append('description', formData.description);
             submitData.append('price', formData.price || '0');
 
+            // --- LOKASYON & HARİTA ENTEGRASYONU ---
             let finalLocation = 'Kampüs İçi';
-            if (city && district) finalLocation = `${district}, ${city}`;
-            else if (schemaType === 'carpooling') finalLocation = `${formData.origin} -> ${formData.destination}`;
-            submitData.append('location', finalLocation);
 
+            if (city && district) {
+                finalLocation = `${district}, ${city}`;
+                // Normal kategorilerde tekli harita seçimi varsa:
+                if (generalLocation) {
+                    finalLocation += ` | Harita: https://www.google.com/maps/search/?api=1&query=${generalLocation.lat},${generalLocation.lng}`;
+                }
+            }
+            else if (schemaType === 'carpooling') {
+                // Carpool için rotaları (metin + link) güncelliyoruz
+                let o = formData.origin;
+                if (originCoords) o += ` (Harita: https://www.google.com/maps/search/?api=1&query=${originCoords.lat},${originCoords.lng})`;
+
+                let d = formData.destination;
+                if (destCoords) d += ` (Harita: https://www.google.com/maps/search/?api=1&query=${destCoords.lat},${destCoords.lng})`;
+
+                finalLocation = `${formData.origin} -> ${formData.destination}`;
+
+                // Backend modelindeki alanları ezerek linkli hallerini gönderiyoruz
+                submitData.append('origin', o);
+                submitData.append('destination', d);
+                submitData.append('departure_date', new Date(formData.departure_date).toISOString());
+                submitData.append('available_seats', formData.available_seats);
+            }
+
+            if (schemaType !== 'carpooling') {
+                submitData.append('location', finalLocation);
+            }
+
+            // Geri kalan formData işlemlerini ekle
             if (featuresList.length > 0) {
-                featuresList.forEach(feature => {
-                    submitData.append(`features[${feature.key}]`, feature.value);
-                });
+                featuresList.forEach(feature => { submitData.append(`features[${feature.key}]`, feature.value); });
             }
 
             if (schemaType === 'secondhand') {
@@ -264,16 +294,8 @@ export default function CreateListingWizard() {
             }
             else if (schemaType === 'roommate') {
                 if (criteriaList.length > 0) {
-                    criteriaList.forEach(criterion => {
-                        submitData.append(`criteria[${criterion.key}]`, criterion.value);
-                    });
+                    criteriaList.forEach(criterion => { submitData.append(`criteria[${criterion.key}]`, criterion.value); });
                 }
-            }
-            else if (schemaType === 'carpooling') {
-                submitData.append('origin', formData.origin);
-                submitData.append('destination', formData.destination);
-                submitData.append('departure_date', new Date(formData.departure_date).toISOString());
-                submitData.append('available_seats', formData.available_seats);
             }
             else if (schemaType === 'course') {
                 submitData.append('subject', formData.subject);
@@ -310,25 +332,6 @@ export default function CreateListingWizard() {
         }
     };
 
-    const renderLocationSelector = (accentColor: string) => (
-        <div className="grid grid-cols-2 gap-4 mt-2">
-            <div className="space-y-2">
-                <label className={`text-sm font-medium ${accentColor} ml-1`}>İl</label>
-                <select value={selectedCityId} onChange={handleCityChange} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-white/30 outline-none text-gray-200 appearance-none">
-                    <option value="" className="bg-gray-900">İl Seçiniz...</option>
-                    {TURKISH_CITIES.map(c => <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>)}
-                </select>
-            </div>
-            <div className="space-y-2">
-                <label className={`text-sm font-medium ${accentColor} ml-1`}>İlçe</label>
-                <select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!selectedCityId || districts.length === 0} className={`w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-white/30 outline-none ${(!selectedCityId || districts.length === 0) ? 'text-gray-600 opacity-50 cursor-not-allowed' : 'text-gray-200'} appearance-none`}>
-                    <option value="" className="bg-gray-900">İlçe Seçiniz...</option>
-                    {districts.map(dName => <option key={dName} value={dName} className="bg-gray-900">{dName}</option>)}
-                </select>
-            </div>
-        </div>
-    );
-
     const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const targetId = e.target.value;
         setSelectedCityId(targetId);
@@ -336,16 +339,69 @@ export default function CreateListingWizard() {
         setCity(cityName); setDistrict('');
     };
 
-    const activeCatData = categories.find(c => c.id === selectedCat);
+    // Dinamik Harita ve Lokasyon Render Fonksiyonu
+    const renderLocationWithMap = (accentColor: string) => (
+        <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className={`text-sm font-medium ${accentColor} ml-1`}>İl <span className="text-rose-500">*</span></label>
+                    <select value={selectedCityId} onChange={handleCityChange} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-white/30 outline-none text-gray-200 appearance-none">
+                        <option value="" className="bg-gray-900">İl Seçiniz...</option>
+                        {TURKISH_CITIES.map(c => <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>)}
+                    </select>
+                </div>
+                <div className="space-y-2">
+                    <label className={`text-sm font-medium ${accentColor} ml-1`}>İlçe <span className="text-rose-500">*</span></label>
+                    <select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!selectedCityId || districts.length === 0} className={`w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-white/30 outline-none ${(!selectedCityId || districts.length === 0) ? 'text-gray-600 opacity-50 cursor-not-allowed' : 'text-gray-200'} appearance-none`}>
+                        <option value="" className="bg-gray-900">İlçe Seçiniz...</option>
+                        {districts.map(dName => <option key={dName} value={dName} className="bg-gray-900">{dName}</option>)}
+                    </select>
+                </div>
+            </div>
 
-    // find active presets
+            {/* HARİTA AÇ/KAPAT BUTONU */}
+            <button
+                type="button"
+                onClick={() => setShowMap(!showMap)}
+                className={`flex items-center gap-2 text-sm font-bold transition-colors ${showMap ? 'text-rose-400' : 'text-blue-400 hover:text-blue-300'}`}
+            >
+                <Map size={18} /> {showMap ? 'Haritayı Gizle' : 'Haritada Nokta İşaretle (Opsiyonel)'}
+            </button>
+
+            {/* GENEL KATEGORİLER İÇİN HARİTA ALANI */}
+            {showMap && (
+                <div className="bg-black/40 border border-white/10 rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-300">
+                    <p className="text-xs text-gray-400 mb-3">İlanını vereceğin eşyanın veya evin tam konumunu seçerek alıcıların işini kolaylaştırabilirsin.</p>
+                    {isLoaded ? (
+                        <div className="rounded-xl overflow-hidden border border-white/10 h-[250px] relative">
+                            <GoogleMap
+                                mapContainerStyle={{ width: '100%', height: '100%' }}
+                                center={generalLocation || defaultMapCenter}
+                                zoom={generalLocation ? 15 : 12}
+                                onClick={(e) => setGeneralLocation({ lat: e.latLng!.lat(), lng: e.latLng!.lng() })}
+                                options={{ mapTypeControl: false, streetViewControl: false, fullscreenControl: false }}
+                            >
+                                {generalLocation && <Marker position={generalLocation} />}
+                            </GoogleMap>
+                        </div>
+                    ) : (
+                        <div className="h-[250px] bg-white/5 animate-pulse rounded-xl flex items-center justify-center text-gray-500 text-sm">
+                            Harita Yükleniyor...
+                        </div>
+                    )}
+                    {generalLocation && <p className="text-xs font-bold text-emerald-400 mt-2 flex items-center gap-1"><CheckCircle2 size={14}/> Konum başarıyla haritaya eklendi.</p>}
+                </div>
+            )}
+        </div>
+    );
+
+    const activeCatData = categories.find(c => c.id === selectedCat);
     const selectedPresetCriterionObj = PRESET_CRITERIA.find(p => p.key === currentCriterionKey);
     const selectedPresetFeatureObj = (selectedCat === 'roommate' ? PRESET_ROOMMATE_FEATURES : PRESET_SECONDHAND_FEATURES).find(p => p.key === currentFeatureKey);
 
     return (
         <div className="max-w-5xl mx-auto pb-20">
 
-            {/* header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-3xl font-black text-white tracking-tight">Yeni İlan <span className="text-cyan-400">Oluştur</span></h1>
@@ -362,7 +418,6 @@ export default function CreateListingWizard() {
                 </div>
             )}
 
-            {/* steps indicator */}
             <div className="flex items-center justify-between mb-12 relative">
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-white/5 -z-10 rounded-full"></div>
                 <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-cyan-500 shadow-[0_0_10px_#22d3ee] -z-10 rounded-full transition-all duration-500`} style={{ width: `${((step - 1) / 3) * 100}%` }}></div>
@@ -373,7 +428,6 @@ export default function CreateListingWizard() {
                 ))}
             </div>
 
-            {/* form area */}
             <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 md:p-12 shadow-2xl min-h-[400px]">
 
                 {step === 1 && (
@@ -415,7 +469,7 @@ export default function CreateListingWizard() {
                         {/* JOB & SCHOLARSHIP */}
                         {(selectedCat === 'job' || selectedCat === 'scholarship') && (
                             <div className={`space-y-4 animate-in zoom-in-95 duration-300 border-l-2 pl-4 ${selectedCat === 'job' ? 'border-blue-500' : 'border-yellow-500'}`}>
-                                {selectedCat === 'job' && renderLocationSelector('text-blue-400')}
+                                {selectedCat === 'job' && renderLocationWithMap('text-blue-400')}
                                 <div className="grid grid-cols-2 gap-4 mt-4">
                                     <div className="space-y-2">
                                         <label className={`text-sm font-medium ml-1 ${selectedCat === 'job' ? 'text-blue-400' : 'text-yellow-400'}`}>Başvuru Linki (Opsiyonel)</label>
@@ -432,17 +486,17 @@ export default function CreateListingWizard() {
                             </div>
                         )}
 
-                        {/* CARPOOL */}
+                        {/* CARPOOL - Çift Harita Özelliği */}
                         {selectedCat === 'carpool' && (
-                            <div className="space-y-4 border-l-2 border-emerald-500 pl-4 animate-in zoom-in-95 duration-300">
+                            <div className="space-y-6 border-l-2 border-emerald-500 pl-4 animate-in zoom-in-95 duration-300">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-emerald-400 ml-1">Nereden <span className="text-rose-500">*</span></label>
-                                        <input type="text" value={formData.origin} onChange={(e) => handleFormChange('origin', e.target.value)} placeholder="Örn: Merkez Kampüs" className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-xl py-3 px-4 outline-none text-gray-200" />
+                                        <input type="text" value={formData.origin} onChange={(e) => handleFormChange('origin', e.target.value)} placeholder="Örn: Buca Metro" className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-xl py-3 px-4 outline-none text-gray-200" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-emerald-400 ml-1">Nereye <span className="text-rose-500">*</span></label>
-                                        <input type="text" value={formData.destination} onChange={(e) => handleFormChange('destination', e.target.value)} placeholder="Örn: Alsancak" className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-xl py-3 px-4 outline-none text-gray-200" />
+                                        <input type="text" value={formData.destination} onChange={(e) => handleFormChange('destination', e.target.value)} placeholder="Örn: Ege Üniversitesi" className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-xl py-3 px-4 outline-none text-gray-200" />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -455,6 +509,53 @@ export default function CreateListingWizard() {
                                         <input type="number" min="1" max="8" value={formData.available_seats} onChange={(e) => handleFormChange('available_seats', e.target.value)} placeholder="Örn: 2" className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-xl py-3 px-4 outline-none text-gray-200" />
                                     </div>
                                 </div>
+
+                                {/* CARPOOL ÖZEL HARİTA BÖLÜMÜ */}
+                                <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 mt-2">
+                                    <label className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2"><MapPin size={16}/> Rotayı Haritada İşaretle (Opsiyonel)</label>
+
+                                    <div className="flex gap-2 mb-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCarpoolMarkerType('origin')}
+                                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${carpoolMarkerType === 'origin' ? 'bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                                        >
+                                            1. Kalkış Noktası {originCoords && '✓'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setCarpoolMarkerType('dest')}
+                                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${carpoolMarkerType === 'dest' ? 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                                        >
+                                            2. Varış Noktası {destCoords && '✓'}
+                                        </button>
+                                    </div>
+
+                                    {isLoaded ? (
+                                        <div className="rounded-xl overflow-hidden border border-white/10 h-[250px] relative">
+                                            <div className="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-xs text-white font-medium">
+                                                Şu an {carpoolMarkerType === 'origin' ? <span className="text-emerald-400 font-bold">Kalkış</span> : <span className="text-blue-400 font-bold">Varış</span>} noktasını seçiyorsunuz.
+                                            </div>
+                                            <GoogleMap
+                                                mapContainerStyle={{ width: '100%', height: '100%' }}
+                                                center={carpoolMarkerType === 'origin' && originCoords ? originCoords : carpoolMarkerType === 'dest' && destCoords ? destCoords : defaultMapCenter}
+                                                zoom={originCoords || destCoords ? 14 : 12}
+                                                onClick={(e) => {
+                                                    if (carpoolMarkerType === 'origin') setOriginCoords({ lat: e.latLng!.lat(), lng: e.latLng!.lng() });
+                                                    else setDestCoords({ lat: e.latLng!.lat(), lng: e.latLng!.lng() });
+                                                }}
+                                                options={{ mapTypeControl: false, streetViewControl: false, fullscreenControl: false }}
+                                            >
+                                                {originCoords && <Marker position={originCoords} label={{text: "A", color: "white", fontWeight: "bold"}} />}
+                                                {destCoords && <Marker position={destCoords} label={{text: "B", color: "white", fontWeight: "bold"}} />}
+                                            </GoogleMap>
+                                        </div>
+                                    ) : (
+                                        <div className="h-[250px] bg-white/5 animate-pulse rounded-xl flex items-center justify-center text-gray-500 text-sm">
+                                            Harita Yükleniyor...
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -463,7 +564,7 @@ export default function CreateListingWizard() {
                             <div className="space-y-6 animate-in zoom-in-95 duration-300 border-l-2 border-teal-500 pl-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-teal-400 ml-1">Evin Konumu <span className="text-rose-500">*</span></label>
-                                    {renderLocationSelector('text-teal-400')}
+                                    {renderLocationWithMap('text-teal-400')}
                                 </div>
 
                                 {/* features */}
@@ -635,7 +736,7 @@ export default function CreateListingWizard() {
                                                 <option value="other" className="bg-gray-900">Diğer</option>
                                             </select>
                                         </div>
-                                        {renderLocationSelector('text-violet-400')}
+                                        {renderLocationWithMap('text-violet-400')}
                                     </>
                                 )}
 
