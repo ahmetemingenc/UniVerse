@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
     ChevronLeft, Heart, Share2, MessageSquare, MapPin, Calendar,
     User, ShieldCheck, Tag, Info, Loader2, Eye, AlertTriangle,
-    Star, Send, Navigation, Users, BookOpen, Briefcase, Link as LinkIcon,
+    Star, Send, Navigation, BookOpen, Briefcase, Link as LinkIcon,
     ListPlus, Zap, Clock, GraduationCap
 } from 'lucide-react';
 
@@ -48,6 +48,11 @@ export default function AdDetailPage() {
     const [isFavorite, setIsFavorite] = useState(false);
     const [activeImage, setActiveImage] = useState(0);
 
+    // Yorum yapma izni (Anlaşma durumu)
+    const [canComment, setCanComment] = useState(false);
+    // Dış bağlantı yönlendirme modalı
+    const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+
     const [comments, setComments] = useState<any[]>([]);
     const [newComment, setNewComment] = useState('');
     const [rating, setRating] = useState(0);
@@ -56,7 +61,7 @@ export default function AdDetailPage() {
     const [commentError, setCommentError] = useState<string | null>(null);
     const [commentSuccess, setCommentSuccess] = useState<string | null>(null);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://universe-1-vdkr.onrender.com';
 
     useEffect(() => {
         const fetchAdDetailsFavoritesAndComments = async () => {
@@ -71,7 +76,7 @@ export default function AdDetailPage() {
                     return;
                 }
 
-                // fetch ad details
+                // 1. İlan Detaylarını Çek
                 const adResponse = await fetch(`${API_URL}/api/listing/${id}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -84,7 +89,7 @@ export default function AdDetailPage() {
                 const adData = await adResponse.json();
                 setAd(adData.listing || adData.data || adData);
 
-                // fetch favorites
+                // 2. Favori Durumunu Kontrol Et
                 try {
                     const favResponse = await fetch(`${API_URL}/api/user/me/favorites`, {
                         method: 'GET',
@@ -97,7 +102,7 @@ export default function AdDetailPage() {
                     }
                 } catch (favErr) { console.warn(favErr); }
 
-                // fetch comments
+                // 3. Yorumları Çek
                 try {
                     const commentsRes = await fetch(`${API_URL}/api/comment/listing/${id}`, {
                         method: 'GET',
@@ -108,6 +113,18 @@ export default function AdDetailPage() {
                         setComments(commentsData.comments || commentsData || []);
                     }
                 } catch (commentErr) { console.warn(commentErr); }
+
+                // 4. Anlaşma Durumunu Çek (Yorum Yapabilme İzni)
+                try {
+                    const agreementRes = await fetch(`${API_URL}/api/offer/check-agreement/${id}`, {
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (agreementRes.ok) {
+                        const agreementData = await agreementRes.json();
+                        setCanComment(agreementData.hasAgreement);
+                    }
+                } catch (agreementErr) { console.warn(agreementErr); }
 
             } catch (err: any) {
                 console.warn(err);
@@ -120,14 +137,27 @@ export default function AdDetailPage() {
         fetchAdDetailsFavoritesAndComments();
     }, [id, router, API_URL]);
 
-    const handleStartChat = () => {
+    const handlePrimaryAction = () => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
             router.push('/login');
             return;
         }
 
-        router.push(`/messages?listingId=${id}`);
+        // Burs ve İş İlanları için dış bağlantı yönlendirmesi
+        if (ad.type === 'job' || ad.type === 'scholarship') {
+            if (ad.application_url) {
+                // Tarayıcı alerti yerine kendi modalımızı açıyoruz
+                setIsApplyModalOpen(true);
+            } else {
+                alert("Bu ilan için başvuru linki bulunmamaktadır. Lütfen mesaj yoluyla iletişime geçin.");
+                router.push(`/messages?listingId=${id}`);
+            }
+        }
+        // Diğer ilan tipleri için mesajlaşma
+        else {
+            router.push(`/messages?listingId=${id}`);
+        }
     };
 
     const handleToggleFavorite = async () => {
@@ -163,7 +193,7 @@ export default function AdDetailPage() {
             });
 
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Yorum gönderilemedi.');
+            if (!response.ok) throw new Error(data.message || data.error || 'Yorum gönderilemedi.');
 
             setCommentSuccess("Değerlendirmeniz başarıyla gönderildi!");
             setNewComment(''); setRating(0);
@@ -174,15 +204,6 @@ export default function AdDetailPage() {
         } finally {
             setCommentLoading(false);
         }
-    };
-
-    const handleContactSeller = () => {
-        const seller = ad.owner || ad.seller;
-        const targetEmail = seller?.edu_email || seller?.email || "";
-        if (!targetEmail) return setCommentError("Satıcının iletişim adresi bulunamadı.");
-        const subject = encodeURIComponent(`UniVerse İlanı: ${ad.title}`);
-        const body = encodeURIComponent(`Merhaba @${seller.username},\n\n"${ad.title}" başlıklı ilanınız için iletişime geçiyorum.`);
-        window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
     };
 
     if (isLoading) {
@@ -298,6 +319,41 @@ export default function AdDetailPage() {
 
     return (
         <div className="min-h-screen pt-28 pb-12 px-4 relative">
+
+            {/* Dış Bağlantı Uyarı Modalı */}
+            {isApplyModalOpen && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#0B0F19] border border-blue-500/30 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-center mb-4">
+                            <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
+                                <LinkIcon size={32} className="text-blue-500" />
+                            </div>
+                        </div>
+                        <h3 className="text-xl font-bold text-white text-center mb-2">Dış Bağlantı Uyarısı</h3>
+                        <p className="text-gray-400 text-center text-sm mb-6">
+                            Başvuru için platform dışı bir bağlantıya yönlendirileceksiniz. Devam etmek istiyor musunuz?
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsApplyModalOpen(false)}
+                                className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-white font-medium"
+                            >
+                                İptal
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsApplyModalOpen(false);
+                                    window.open(ad.application_url, '_blank', 'noopener,noreferrer');
+                                }}
+                                className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 transition-colors text-white font-bold shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                            >
+                                Devam Et
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {isMockData && (
                 <div className="absolute top-20 left-0 w-full bg-amber-500/20 border-b border-amber-500/50 py-2 z-40 flex items-center justify-center gap-2 backdrop-blur-md">
                     <AlertTriangle size={16} className="text-amber-500" />
@@ -379,7 +435,7 @@ export default function AdDetailPage() {
                                 <span>Değerlendirmeler ({comments.length})</span>
                             </h3>
 
-                            {ad.offerStatus === 'Accepted' ? (
+                            {canComment ? (
                                 <form onSubmit={handleSubmitComment} className="mb-10 bg-white/5 border border-white/10 rounded-2xl p-5 animate-in fade-in duration-300">
                                     <h4 className="text-sm font-bold text-gray-300 mb-3">Bu işlemi değerlendir:</h4>
                                     <div className="flex items-center space-x-2 mb-4">
@@ -407,7 +463,7 @@ export default function AdDetailPage() {
                                     </div>
                                     <h4 className="text-sm font-bold text-gray-200 mb-1">Değerlendirme Kapalı</h4>
                                     <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                                        Bu ilana yorum yapabilmek ve puan verebilmek için satıcının size ait bir teklifi kabul etmiş olması gerekmektedir.
+                                        Bu ilana yorum yapabilmek ve puan verebilmek için satıcı ile aranızda kabul edilmiş bir anlaşma olması gerekmektedir.
                                     </p>
                                 </div>
                             )}
@@ -515,12 +571,19 @@ export default function AdDetailPage() {
                                         <div className="flex items-center space-x-2">
                                             <h4 className="text-white font-bold text-sm">@{seller.username || 'Kullanıcı'}</h4>
 
-                                            {/* student or external badges (temp) */}
-                                            {seller.edu_email ? (
-                                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-wider border border-blue-500/30">
-                                                    <GraduationCap size={12} />
-                                                    Onaylı Öğrenci
-                                                </span>
+                                            {/* Dinamik Kullanıcı Rozetleri */}
+                                            {seller.account_type === 'student' ? (
+                                                seller.is_verified ? (
+                                                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-wider border border-blue-500/30">
+                                                        <GraduationCap size={12} />
+                                                        Onaylı Öğrenci
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 text-[10px] font-black uppercase tracking-wider border border-blue-500/20">
+                                                        <GraduationCap size={12} />
+                                                        Öğrenci (Onaysız)
+                                                    </span>
+                                                )
                                             ) : (
                                                 <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[10px] font-black uppercase tracking-wider border border-gray-500/30">
                                                     <User size={12} />
@@ -534,9 +597,9 @@ export default function AdDetailPage() {
                             )}
 
                             <button
-                                onClick={handleStartChat}
+                                onClick={handlePrimaryAction}
                                 className="w-full bg-cyan-500 text-black py-4 rounded-2xl font-bold hover:bg-cyan-400 transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-                                Mesaj Gönder
+                                {ad.type === 'job' || ad.type === 'scholarship' ? 'Hemen Başvur' : 'Mesaj Gönder'}
                             </button>
                         </div>
                     </div>
