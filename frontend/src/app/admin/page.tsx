@@ -164,10 +164,17 @@ export default function AdminDashboardPage() {
                 method: 'POST', body: JSON.stringify({ text: adminMsgText })
             });
             const newMsg = await res.json();
+
+            if (!res.ok) {
+                throw new Error(newMsg.error || "Mesaj iletilemedi");
+            }
+
             setConvDetails({ ...convDetails, messages: [...convDetails.messages, newMsg.message] });
             setAdminMsgText('');
             showToast("Mesaj iletildi");
-        } catch (err) { showToast("Mesaj iletilemedi", 'error'); }
+        } catch (err: any) {
+            showToast(err.message || "Mesaj iletilemedi", 'error');
+        }
     };
 
     return (
@@ -406,17 +413,22 @@ export default function AdminDashboardPage() {
                                                 Katılımcılar: @{convDetails.conversation.seller?.username} & @{convDetails.conversation.buyer?.username}
                                             </div>
 
-                                            <div className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
-                                                {convDetails.messages.map((msg:any) => (
-                                                    <div key={msg._id} className={`flex flex-col ${msg.type === 'admin' ? 'items-center' : msg.type === 'system' ? 'items-center opacity-70' : 'items-start'}`}>
-                                                        <span className={`text-[10px] mb-1 ${msg.type === 'admin' ? 'text-rose-400 font-bold' : 'text-gray-500'}`}>
-                                                            {msg.type === 'admin' ? 'Sistem Moderatörü' : msg.sender?.username}
-                                                        </span>
-                                                        <div className={`px-4 py-2 rounded-2xl max-w-[80%] text-sm ${msg.type === 'admin' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50' : 'bg-white/10 text-gray-200'}`}>
-                                                            {msg.text || 'Sistem Aksiyonu'}
+                                            <div className="flex-1 overflow-y-auto space-y-4 pr-4 mb-6 custom-scrollbar">
+                                                {convDetails.messages.map((msg:any, index: number) => {
+                                                    // GÜVENLİK KATMANI: Eğer mesaj undefined ise boş renderla, patlama
+                                                    if (!msg) return null;
+
+                                                    return (
+                                                        <div key={msg._id || index} className={`flex flex-col ${msg.type === 'admin' ? 'items-center' : msg.type === 'system' ? 'items-center opacity-70' : 'items-start'}`}>
+                                                            <span className={`text-[11px] mb-1.5 uppercase font-bold tracking-wider ${msg.type === 'admin' ? 'text-rose-400' : 'text-gray-500'}`}>
+                                                                {msg.type === 'admin' ? 'Sistem Moderatörü' : msg.sender?.username || 'Bilinmeyen'}
+                                                            </span>
+                                                            <div className={`px-5 py-3 rounded-2xl max-w-[80%] text-base ${msg.type === 'admin' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50' : 'bg-white/10 text-gray-200'}`}>
+                                                                {msg.text || 'Sistem Aksiyonu / Medya'}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    )
+                                                })}
                                             </div>
 
                                             <form onSubmit={handleSendAdminMessage} className="flex gap-2">

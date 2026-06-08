@@ -11,6 +11,7 @@ export default function Navbar() {
 
     const [isMounted, setIsMounted] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false); // Admin kontrolü için yeni state
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     // search bar states
@@ -24,9 +25,25 @@ export default function Navbar() {
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-    const checkAuth = () => {
+    const checkAuth = async () => {
         const token = localStorage.getItem('accessToken');
         setIsLoggedIn(!!token);
+
+        if (token) {
+            try {
+                const res = await fetch(`${API_URL}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                // Backend'den gelen is_admin bilgisini setle
+                setIsAdmin(data.user?.is_admin || data.is_admin || false);
+            } catch (e) {
+                console.error("Auth kontrol hatası:", e);
+                setIsAdmin(false);
+            }
+        } else {
+            setIsAdmin(false);
+        }
     };
 
     useEffect(() => {
@@ -55,7 +72,7 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-// live search logic with debounce
+    // live search logic with debounce
     useEffect(() => {
         const fetchResults = async () => {
             if (searchTerm.trim().length < 2) {
@@ -95,7 +112,7 @@ export default function Navbar() {
             }
         };
 
-        // hhe request is sent 500ms after the user stops typing
+        // the request is sent 500ms after the user stops typing
         const delayDebounceFn = setTimeout(() => {
             fetchResults();
         }, 500);
@@ -106,6 +123,7 @@ export default function Navbar() {
     const handleLogout = () => {
         localStorage.removeItem('accessToken');
         setIsLoggedIn(false);
+        setIsAdmin(false); // Çıkışta admin state'ini de sıfırla
         setIsDropdownOpen(false);
 
         window.dispatchEvent(new Event('auth_status_changed'));
@@ -246,6 +264,14 @@ export default function Navbar() {
                                             <Link href="/profile" className="block px-4 py-2.5 text-sm font-medium text-gray-300 hover:text-cyan-300 hover:bg-white/5 transition-colors">
                                                 Profilim
                                             </Link>
+
+                                            {/* Admin Linki */}
+                                            {isAdmin && (
+                                                <Link href="/admin" className="block px-4 py-2.5 text-sm font-bold text-rose-400 hover:text-white hover:bg-rose-500/10 transition-colors border-b border-white/5">
+                                                    Yönetim Paneli
+                                                </Link>
+                                            )}
+
                                             <Link href="/profile" className="block px-4 py-2.5 text-sm font-medium text-gray-300 hover:text-cyan-300 hover:bg-white/5 transition-colors">
                                                 Hesap Ayarları
                                             </Link>
