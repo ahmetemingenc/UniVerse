@@ -6,7 +6,7 @@ import { Zap, Clock, AlertCircle, ArrowRight, Text, MapPin, Loader2 } from 'luci
 
 const durations = [
     { id: '1h', label: '1 Saat', value: 1, desc: 'Çok Acil' },
-    { id: '3h', label: '3 Saat', value: 3, desc: 'Kısa Süreli' },
+    { id: '6h', label: '3 Saat', value: 6, desc: 'Kısa Süreli' },
     { id: '12h', label: '12 Saat', value: 12, desc: 'Gün İçi' },
     { id: '24h', label: '24 Saat', value: 24, desc: 'Yarına Kadar' },
 ];
