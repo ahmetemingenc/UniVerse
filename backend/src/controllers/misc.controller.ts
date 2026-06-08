@@ -16,8 +16,7 @@ export const getDistricts = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "city_id parametresi gerekli." });
         }
 
-        const dataPath = path.join(__dirname, "../data/districts.json");
-
+        const dataPath = path.join(process.cwd(), "src", "data", "districts.json");
         const rawData = await fs.readFile(dataPath, "utf-8");
         const districts: IDistrict[] = JSON.parse(rawData);
 

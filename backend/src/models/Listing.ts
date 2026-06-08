@@ -39,10 +39,10 @@ const listingSchema = new mongoose.Schema(
             enum: ['active', 'sold', 'closed', 'expired'],
             default: 'active',
         },
-        is_urgent: {
-            type: Boolean,
-            default: false,
-        },
+        // is_urgent: {
+        //     type: Boolean,
+        //     default: false,
+        // },
         expires:{
             type: Date,
         },
@@ -215,6 +215,21 @@ export const ScholarshipListing = Listing.discriminator(
         application_url: {
             type: String,
             default: null,
+        },
+    })
+)
+
+export const UrgentListing = Listing.discriminator(
+    'Urgent',
+    new mongoose.Schema({})
+)
+
+export const NoteListing = Listing.discriminator(
+    'Note',
+    new mongoose.Schema({
+        lecture: {
+            type: String,
+            required: [true, 'Lecture is required'],
         },
     })
 )
