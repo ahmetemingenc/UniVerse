@@ -16,7 +16,6 @@ interface Advert {
 export default function PublicProfilePage() {
     const params = useParams();
     const router = useRouter();
-    // params.id artık satıcının id'si değil, referans aldığımız İLANIN id'si
     const listingId = params.id as string;
 
     const [userData, setUserData] = useState<any>(null);
@@ -35,15 +34,12 @@ export default function PublicProfilePage() {
                 setError(null);
 
                 const token = localStorage.getItem('accessToken');
-                const getHeaders = (): HeadersInit => {
-                    const token = localStorage.getItem('accessToken');
-                    return token ? { 'Authorization': `Bearer ${token}` } : {};
-                };
+                const headers = new Headers();
+                if (token) headers.set('Authorization', `Bearer ${token}`);
 
-                // 1. İlan ID'si üzerinden ilanı çekip Sahibini (Owner) buluyoruz
                 const listingRes = await fetch(`${API_URL}/api/listing/${listingId}`, {
                     method: 'GET',
-                    headers: getHeaders()
+                    headers
                 });
 
                 if (!listingRes.ok) {
@@ -58,14 +54,12 @@ export default function PublicProfilePage() {
                     throw new Error('İlanın sahibi bulunamadı.');
                 }
 
-                // Satıcıyı profile yansıtıyoruz
                 setUserData(seller);
 
-                // 2. Sahibin ID'sini (seller._id) kullanarak aktif tüm ilanlarını çekiyoruz
                 const sellerId = seller._id || seller;
                 const listingsRes = await fetch(`${API_URL}/api/listing/user/${sellerId}`, {
                     method: 'GET',
-                    headers: getHeaders()
+                    headers
                 });
 
                 if (listingsRes.ok) {
@@ -114,16 +108,13 @@ export default function PublicProfilePage() {
     return (
         <div className="min-h-screen pt-24 pb-12 px-4 md:px-8 max-w-6xl mx-auto flex flex-col relative text-gray-100">
 
-            {/* Top Section: Profile Card */}
             <div className="bg-[#0B0F19]/80 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden mb-8 shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
-                {/* Banner */}
                 <div className="h-32 md:h-48 w-full bg-gradient-to-r from-cyan-900/40 via-blue-900/40 to-indigo-900/40 relative">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
                 </div>
 
                 <div className="px-6 pb-6 md:px-10 md:pb-10 relative">
                     <div className="flex flex-col md:flex-row gap-6 md:items-end -mt-16 md:-mt-20 relative z-10">
-                        {/* Avatar */}
                         <div className="w-32 h-32 rounded-full border-4 border-[#0B0F19] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.3)] overflow-hidden flex-shrink-0">
                             {userData.profile_photo || userData.avatar ? (
                                 <img src={userData.profile_photo || userData.avatar} alt="Profil" className="w-full h-full object-cover" />
@@ -134,7 +125,6 @@ export default function PublicProfilePage() {
                             )}
                         </div>
 
-                        {/* User Info */}
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                                 <h1 className="text-3xl font-black tracking-tight text-white">
@@ -150,7 +140,6 @@ export default function PublicProfilePage() {
                             <h2 className="text-sm font-bold text-cyan-400 mb-3">@{userData.username}</h2>
 
                             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 font-medium">
-                                {/* Dinamik Kullanıcı Rozetleri */}
                                 {(userData.account_type?.toLowerCase() === 'student' || !!userData.edu_email) ? (
                                     (userData.is_verified || !!userData.edu_email) ? (
                                         <span className="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
@@ -177,7 +166,6 @@ export default function PublicProfilePage() {
                 </div>
             </div>
 
-            {/* Bottom Section: User's Listings */}
             <div className="bg-[#0B0F19]/60 backdrop-blur-md border border-white/10 rounded-3xl p-6 md:p-8">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-6">
                     <Package size={24} className="text-cyan-500" />
