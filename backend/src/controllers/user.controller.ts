@@ -10,6 +10,7 @@ import {
     addToSavedSchema,
     removeFromSavedSchema, changePasswordSchema
 } from "../validators/user.validator"
+import {uploadSingle} from "../utils/cloudinary/uploader.util";
 
 // ─── 1. PROFILE UPDATE ────────────────────────────────────────────────────
 // PATCH /api/user/me
@@ -430,5 +431,48 @@ export const changePassword = async (req: Request, res: Response): Promise<any> 
     } catch (e) {
         console.error("Change Password Error:", e);
         return res.status(500).json({ error: "Server error" });
+    }
+};
+
+
+export const updateProfilePhoto = async (req: Request, res: Response): Promise<any> => {
+    try {
+        // Multer'dan dosya gelip gelmediğini kontrol ediyoruz
+        if (!req.file) {
+            return res.status(400).json({ error: "Lütfen bir fotoğraf seçin." });
+        }
+
+        // Kullanıcıyı buluyoruz
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+        }
+
+        // ─── Kendi Util Fonksiyonumuz ile Cloudinary'e Yükleme ───
+        // 'profilePhoto' presetini vererek limit, klasör ve boyut ayarlarının uygulanmasını sağlıyoruz.
+        const uploadResult = await uploadSingle(req.file, 'profilePhoto');
+
+        // Yeni fotoğraf URL'ini user modeline kaydediyoruz
+        user.profile_photo = uploadResult.url;
+        await user.save();
+
+        // ++ LOGLAMA ++
+        await createActivityLog({
+            req, res, actor: req.userId,
+            action: "PROFILE_PHOTO_CHANGED" as any,
+            entity_type: "User", entity_id: user._id,
+            metadata: { photoUrl: user.profile_photo }
+        });
+
+        return res.status(200).json({
+            message: "Profil fotoğrafı başarıyla güncellendi.",
+            profile_photo: user.profile_photo
+        });
+    } catch (error: any) {
+        console.error("Update Profile Photo Error:", error);
+
+        // Eğer kendi util'indeki "File is too big" gibi özel hatalar fırlatılırsa
+        // bunu yakalayıp kullanıcıya direkt dönüyoruz.
+        return res.status(400).json({ error: error.message || "Fotoğraf yüklenirken bir hata oluştu." });
     }
 };

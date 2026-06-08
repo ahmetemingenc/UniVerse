@@ -1,5 +1,7 @@
 import { Router } from "express"
 import {authMiddleware, emailVerificationLimiter, studentOnly} from "../middleware/middleware"
+import multer from 'multer'
+
 // import {
 //     updateUser,
 //     getFavoriteListings,
@@ -13,16 +15,28 @@ import {authMiddleware, emailVerificationLimiter, studentOnly} from "../middlewa
 import * as UC from '../controllers/user.controller'
 
 import {sendEduVerification, verifyEduMail} from "../controllers/verification.controller";
-import {changePassword} from "../controllers/user.controller";
+import {changePassword, updateProfilePhoto} from "../controllers/user.controller";
 
 const router = Router()
+const upload = multer({ storage: multer.memoryStorage() })
 
 // ─── KENDİ PROFİLİ ────────────────────────────────────────────────────────
 
 // PATCH /api/user/me          → Profil güncelle (isim, şifre, foto vb.)
 router.patch("/me",                     authMiddleware,              UC.updateUser)
 
+// PATCH /api/user/me/change-password          → Profil güncelle (isim, şifre, foto vb.)
+
 router.patch('/me/change-password', authMiddleware, changePassword);
+
+// PATCH /api/user/me/profile-photo          → Profil güncelle (isim, şifre, foto vb.)
+
+router.patch(
+    "/me/profile-photo",
+    authMiddleware,
+    upload.single("profile_photo"), // Postman/Frontend'den form-data "profile_photo" adıyla gelecek
+    updateProfilePhoto
+);
 
 // ─── FAVORİLER ────────────────────────────────────────────────────────────
 
