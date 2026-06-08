@@ -9,24 +9,23 @@ export default function SystemAnnouncement() {
 
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
-        if (!token) return; // Kullanıcı giriş yapmamışsa sokete bağlanmaya gerek yok
+        if (!token) return; // if user isn't logged in, don't connect to socket
 
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://universe-1-vdkr.onrender.com';
 
-        // Soket bağlantısını kur
+        // socket connection
         const socket: Socket = io(API_URL, {
             auth: { token: `Bearer ${token}` }
         });
 
-        // "system_announcement" eventini dinle
+        // system_announcement event listen
         socket.on('system_announcement', (data: { title: string; message: string; timestamp: string }) => {
             setAnnouncement(data);
 
-            // İsteğe bağlı: Uyarının 15 saniye sonra ekrandan otomatik kaybolmasını sağlar
-            // setTimeout(() => setAnnouncement(null), 15000);
+            setTimeout(() => setAnnouncement(null), 15000);
         });
 
-        // Component ekrandan kalkarsa veya kullanıcı çıkış yaparsa bağlantıyı temizle
+        // clear the connection if the component disappears from the screen or the user exits
         return () => {
             socket.off('system_announcement');
             socket.disconnect();

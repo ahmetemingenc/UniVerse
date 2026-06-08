@@ -13,13 +13,12 @@ export default function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    // Arama Çubuğu Stateleri
+    // search bar states
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchResults, setShowSearchResults] = useState(false);
 
-    // Dışarı Tıklamayı Algılamak İçin Ref'ler
     const dropdownRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLDivElement>(null);
 
@@ -41,14 +40,12 @@ export default function Navbar() {
         };
     }, [pathname]);
 
-    // Dışarı Tıklanınca Menüleri Kapatma Mantığı (Click-Outside)
+    // click-outside logic
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            // Profil menüsü dışına tıklanırsa
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false);
             }
-            // Arama menüsü dışına tıklanırsa
             if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
                 setShowSearchResults(false);
             }
@@ -58,7 +55,7 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-// Canlı Arama (Live Search) Mantığı - Debounce ile
+// live search logic with debounce
     useEffect(() => {
         const fetchResults = async () => {
             if (searchTerm.trim().length < 2) {
@@ -98,7 +95,7 @@ export default function Navbar() {
             }
         };
 
-        // Kullanıcı yazmayı bıraktıktan 500ms sonra istek atar
+        // hhe request is sent 500ms after the user stops typing
         const delayDebounceFn = setTimeout(() => {
             fetchResults();
         }, 500);
@@ -156,7 +153,7 @@ export default function Navbar() {
                     {/* search and auth actions */}
                     <div className="flex items-center justify-end space-x-6 w-1/4">
 
-                        {/* CANLI ARAMA ALANI */}
+                        {/* live search area */}
                         <div className="relative hidden sm:flex items-center" ref={searchRef}>
                             <div className="flex items-center bg-white/5 border border-white/10 rounded-full px-4 py-2 focus-within:border-cyan-500/50 focus-within:bg-black/50 transition-all shadow-inner">
                                 <Search size={16} className="text-gray-500" />
@@ -175,7 +172,7 @@ export default function Navbar() {
                                 />
                             </div>
 
-                            {/* CANLI ARAMA SONUÇLARI DROPDOWN */}
+                            {/* live search results (dropdown) */}
                             {showSearchResults && searchTerm.trim().length >= 2 && (
                                 <div className="absolute top-[120%] right-0 w-72 bg-[#0B0F19]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden py-2 animate-in fade-in slide-in-from-top-2">
                                     {isSearching ? (
@@ -281,7 +278,7 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Özel Scrollbar CSS */}
+            {/* custom scrollbar */}
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

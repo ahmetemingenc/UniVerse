@@ -12,30 +12,30 @@ export default function AdminDashboardPage() {
     const router = useRouter();
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://universe-1-vdkr.onrender.com';
 
-    // State Yönetimi
+    // state management
     const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'listings' | 'system' | 'conversations'>('dashboard');
     const [isLoading, setIsLoading] = useState(true);
     const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
-    // Tab Data States
+    // tab data states
     const [stats, setStats] = useState<any>(null);
     const [listings, setListings] = useState<any[]>([]);
     const [onlineData, setOnlineData] = useState<{ totalOnline: number, users: any[] }>({ totalOnline: 0, users: [] });
 
-    // User Search State
+    // user search states
     const [userSearchQuery, setUserSearchQuery] = useState('');
     const [userDetails, setUserDetails] = useState<any>(null);
     const [isUserSearching, setIsUserSearching] = useState(false);
 
-    // Broadcast State
+    // broadcast state
     const [broadcastData, setBroadcastData] = useState({ title: '', message: '' });
 
-    // Conversation Search State
+    // conversation search state
     const [convSearchQuery, setConvSearchQuery] = useState('');
     const [convDetails, setConvDetails] = useState<any>(null);
     const [adminMsgText, setAdminMsgText] = useState('');
 
-    // --- GENEL FONKSİYONLAR ---
+    // --- GENERAL FUNCTIONS ---
     const showToast = (text: string, type: 'success' | 'error' = 'success') => {
         setToastMessage({ text, type });
         setTimeout(() => setToastMessage(null), 3000);
@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
         return res;
     };
 
-    // --- VERİ ÇEKME (TABS) ---
+    // --- DATA EXTRACTION (TABS) ---
     useEffect(() => {
         const loadTabContent = async () => {
             setIsLoading(true);
@@ -87,16 +87,13 @@ export default function AdminDashboardPage() {
         loadTabContent();
     }, [activeTab]);
 
-    // --- KULLANICI YÖNETİMİ ---
+    // --- USER MANAGEMENT ---
     const handleUserSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!userSearchQuery) return;
         setIsUserSearching(true);
         setUserDetails(null);
         try {
-            // Önce kullanıcıyı bul (identifier üzerinden ban endpointini manipüle ederek ID'sini alabilir veya backendde search yazabilirsin)
-            // Backendinde direkt arama yok ama '/api/admin/users/:id/details' var.
-            // Eğer admin ID yerine username yazarsa diye backend'de ufak bir arama eksiği var ama biz şimdilik ID girildiğini varsayalım.
             const res = await fetchWithAuth(`/api/admin/users/${userSearchQuery}/details`);
             if (!res.ok) throw new Error("Kullanıcı bulunamadı (Lütfen tam ID giriniz)");
             setUserDetails(await res.json());
@@ -125,7 +122,7 @@ export default function AdminDashboardPage() {
         } catch (err) { showToast("Onay başarısız", 'error'); }
     };
 
-    // --- İLAN YÖNETİMİ ---
+    // --- AD MANAGEMENT ---
     const handleDeleteListing = async (id: string) => {
         if (!confirm("İlanı silmek istediğinize emin misiniz? (Soft Delete)")) return;
         try {
@@ -135,7 +132,7 @@ export default function AdminDashboardPage() {
         } catch (err) { showToast("Silme hatası", 'error'); }
     };
 
-    // --- SİSTEM & BROADCAST ---
+    // --- BROADCASTING ---
     const handleSendBroadcast = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!broadcastData.title || !broadcastData.message) return;
@@ -148,7 +145,7 @@ export default function AdminDashboardPage() {
         } catch (err) { showToast("Duyuru gönderilemedi", 'error'); }
     };
 
-    // --- SOHBET MÜDAHALESİ ---
+    // --- CONVERSATION INTERVENTION ---
     const handleConvSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!convSearchQuery) return;
@@ -176,7 +173,7 @@ export default function AdminDashboardPage() {
     return (
         <div className="min-h-screen pt-24 pb-12 px-4 md:px-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-8 relative text-gray-100">
 
-            {/* TOAST */}
+            {/* toast */}
             {toastMessage && (
                 <div className={`fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-2xl border backdrop-blur-md flex items-center gap-3 shadow-2xl animate-in slide-in-from-bottom-5 ${toastMessage.type === 'success' ? 'bg-emerald-900/90 border-emerald-500/50 text-emerald-400' : 'bg-rose-900/90 border-rose-500/50 text-rose-400'}`}>
                     {toastMessage.type === 'success' ? <CheckCircle size={20}/> : <AlertTriangle size={20}/>}
@@ -184,20 +181,19 @@ export default function AdminDashboardPage() {
                 </div>
             )}
 
-            {/* SIDEBAR */}
+            {/* sidebar */}
             <aside className="w-full md:w-64 flex flex-col gap-2 flex-shrink-0">
                 <div className="mb-6 px-4">
-                    <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-purple-500 tracking-tight">
+                    <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500 tracking-tight">
                         Yönetim Paneli
                     </h1>
-                    <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest">Sistem Kontrol</p>
                 </div>
 
                 {[
                     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
                     { id: 'users', label: 'Kullanıcı & Loglar', icon: Users },
                     { id: 'listings', label: 'İlan Yönetimi', icon: Package },
-                    { id: 'system', label: 'Sistem & Duyuru', icon: Radio },
+                    { id: 'system', label: 'Sistem Duyurusu', icon: Radio },
                     { id: 'conversations', label: 'Sohbet Müdahale', icon: MessageSquare },
                 ].map((item) => (
                     <button key={item.id} onClick={() => setActiveTab(item.id as any)} className={`p-4 rounded-2xl flex items-center gap-3 font-semibold transition-all ${activeTab === item.id ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]' : 'bg-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200'}`}>
@@ -206,7 +202,7 @@ export default function AdminDashboardPage() {
                 ))}
             </aside>
 
-            {/* MAIN CONTENT AREA */}
+            {/* main content area */}
             <main className="flex-1 bg-[#0B0F19]/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 min-h-[500px]">
 
                 {isLoading ? (
@@ -263,7 +259,7 @@ export default function AdminDashboardPage() {
 
                                 {userDetails && (
                                     <div className="space-y-6">
-                                        {/* Profil Kartı */}
+                                        {/* profile card */}
                                         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden border-2 border-rose-500/50">
@@ -290,7 +286,7 @@ export default function AdminDashboardPage() {
                                             </div>
                                         </div>
 
-                                        {/* Loglar Tablosu */}
+                                        {/* log table */}
                                         <div className="bg-black/40 border border-white/10 rounded-2xl overflow-hidden">
                                             <h4 className="font-bold text-rose-400 p-4 border-b border-white/10 flex items-center gap-2"><Activity size={18}/> Son Aktivite Logları</h4>
                                             <div className="overflow-x-auto">
@@ -350,10 +346,9 @@ export default function AdminDashboardPage() {
                             </div>
                         )}
 
-                        {/* 4. SYSTEM & BROADCAST TAB */}
+                        {/* 4. BROADCAST TAB */}
                         {activeTab === 'system' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-300">
-                                {/* Duyuru Paneli */}
                                 <div>
                                     <h2 className="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">Sistem Duyurusu</h2>
                                     <form onSubmit={handleSendBroadcast} className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
