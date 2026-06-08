@@ -9,11 +9,10 @@ interface Advert {
     title: string;
     price: number | string;
     category: string;
-    type: string;
+    type: string; // 'urgent', 'secondhand', 'carpooling' vb.
     location: string;
     createdAt: string;
     photos?: string[];
-    is_urgent?: boolean;
 }
 
 export default function FeedPage() {
@@ -66,60 +65,40 @@ export default function FeedPage() {
 
         try {
             const token = localStorage.getItem('accessToken');
-            if (!token) {
-                router.push('/login');
-                return;
-            }
+            if (!token) { router.push('/login'); return; }
 
             const queryParams = new URLSearchParams();
 
-            let url = `${API_URL}/api/listing`;
-
-            // Parametreleri Ekle
             if (searchQuery) queryParams.append('q', searchQuery);
+
             if (selectedCategories.length > 0) {
-                queryParams.append('type', selectedCategories.join(','));
+                queryParams.append('category', selectedCategories.join(','));
             }
+
             if (minPrice) queryParams.append('min_price', minPrice);
             if (maxPrice) queryParams.append('max_price', maxPrice);
             queryParams.append('sort', sortBy);
 
-            const finalUrl = `${url}?${queryParams.toString()}`;
+            const finalUrl = `${API_URL}/api/listing?${queryParams.toString()}`;
 
             const response = await fetch(finalUrl, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            const text = await response.text();
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                setError(`Sunucu yanıtı geçersiz (HTML döndü).`);
-                setAdverts([]);
-                setIsLoading(false);
-                return;
-            }
+            const data = await response.json();
 
             if (!response.ok) {
                 setError(data.message || 'İlanlar çekilirken bir hata oluştu.');
                 setAdverts([]);
-                setIsLoading(false);
                 return;
             }
 
-            const allListings = data.listings || [];
-            const standardListings = allListings.filter((ad: Advert) => !ad.is_urgent);
+            const filteredListings = (data.listings || []).filter((ad: Advert) => ad.type !== 'urgent');
 
-            setAdverts(standardListings);
+            setAdverts(filteredListings);
 
         } catch (err: any) {
-            console.error("Fetch Hatası:", err);
-            setError(err.message || "İlanlar yüklenemedi.");
+            setError("İlanlar yüklenemedi.");
             setAdverts([]);
         } finally {
             setIsLoading(false);
