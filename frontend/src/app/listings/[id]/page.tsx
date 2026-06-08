@@ -9,6 +9,7 @@ import {
     Star, Send, Navigation, BookOpen, Briefcase, Link as LinkIcon,
     ListPlus, Zap, Clock, GraduationCap
 } from 'lucide-react';
+import CountdownTimer from "@/components/CountdownTimer";
 
 // a helper object for translating category types into Turkish
 const TYPE_MAP: Record<string, string> = {
@@ -390,6 +391,26 @@ export default function AdDetailPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* left area */}
                     <div className="lg:col-span-2 space-y-8">
+
+                        {ad.type === 'urgent' && (
+                            <div className="bg-rose-500/10 border border-rose-500/30 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between shadow-[0_0_30px_rgba(244,63,94,0.1)]">
+                                <div className="flex items-center gap-4 mb-4 md:mb-0">
+                                    <div className="p-4 bg-rose-500 rounded-2xl text-black animate-pulse">
+                                        <Zap size={32} fill="currentColor" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-white">ACİL YARDIM ÇAĞRISI</h2>
+                                        <p className="text-rose-300 text-sm">Bu ilan kritik ihtiyaçlar içindir, lütfen hızlı aksiyon al.</p>
+                                    </div>
+                                </div>
+                                {/* Sayacı burada çağırıyoruz */}
+                                <div className="text-right">
+                                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Kalan Süre</p>
+                                    {/* NOT: Burada ad.expires (saat) değerinden tarih oluşturman gerekecek */}
+                                    <CountdownTimer expiresAt={new Date(new Date(ad.createdAt).getTime() + (ad.expires * 60 * 60 * 1000)).toISOString()} />
+                                </div>
+                            </div>
+                        )}
                         {/* images */}
                         <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden p-2">
                             <div className="aspect-[4/3] w-full rounded-2xl overflow-hidden bg-[#0B0F19] relative group flex items-center justify-center">
