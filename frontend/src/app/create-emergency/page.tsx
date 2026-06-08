@@ -63,10 +63,6 @@ export default function CreateEmergencyPage() {
 
     return (
         <div className="relative min-h-[80vh] flex flex-col justify-center py-10 px-4">
-            <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes slow-breathe { 0%, 100% { opacity: 0.3; transform: scale(0.9); } 50% { opacity: 0.6; transform: scale(1.1); } }
-                .animate-slow-breathe { animation: slow-breathe 4s infinite ease-in-out; }
-            `}}/>
             <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 flex items-center justify-center">
                 <div className="w-[80rem] h-[80rem] bg-rose-600/20 rounded-full blur-[500px] mix-blend-screen animate-slow-breathe flex-shrink-0"></div>
             </div>
@@ -91,7 +87,7 @@ export default function CreateEmergencyPage() {
                         <AlertCircle size={16}/> Acil İlan Sistemi Nasıl Çalışır?
                     </h3>
                     <p className="text-xs text-gray-400 leading-relaxed">
-                        Acil ilanlar, seçtiğin süre boyunca en üstte dikkat çekici şekilde listelenir. Süre dolduğunda sistem ilanı otomatik olarak yayından kaldırır; böylece kampüs içindeki güncel ihtiyaçlar karışıklık yaratmaz.
+                        Acil ilanlar, seçtiğin süre boyunca Acil İlanlar sayfasında listelenir. Süre dolduğunda sistem ilanı otomatik olarak yayından kaldırır; böylece kampüs içindeki güncel ihtiyaçlar karışıklık yaratmaz.
                     </p>
                 </div>
 
@@ -126,7 +122,7 @@ export default function CreateEmergencyPage() {
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-400 ml-1 flex items-center space-x-2">
-                            <Text size={16}/> <span>Ekstra Detay (Opsiyonel)</span>
+                            <Text size={16}/> <span>Açıklama</span>
                         </label>
                         <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Sana nasıl ulaşabilirler?" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-rose-500/40 outline-none text-gray-200 resize-none transition-all"></textarea>
                     </div>
