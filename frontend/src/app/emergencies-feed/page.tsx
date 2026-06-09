@@ -117,7 +117,7 @@ export default function EmergenciesPage() {
                     {!isLoading && emergencies.map((emergency) => (
                         <div
                             key={emergency._id}
-                            onClick={() => router.push(`/listings/${emergency._id}`)}
+                            onClick={() => router.push(`/emergencies/${emergency._id}`)}
                             className="group cursor-pointer bg-black/40 backdrop-blur-xl border border-rose-500/20 hover:border-rose-500/50 rounded-2xl p-6 transition-all hover:-translate-y-1 flex flex-col relative overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-600/10 rounded-full blur-[50px]"></div>

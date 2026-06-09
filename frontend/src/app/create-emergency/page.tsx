@@ -50,7 +50,7 @@ export default function CreateEmergencyPage() {
             if (!response.ok) throw new Error('İlan oluşturulamadı');
 
             setSubmitStatus('success');
-            setTimeout(() => router.push('/feed'), 1000);
+            setTimeout(() => router.push('/emergencies-feed'), 1000);
         } catch (error) {
             console.error("Error:", error);
             setSubmitStatus('error');
