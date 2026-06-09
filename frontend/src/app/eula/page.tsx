@@ -1,4 +1,4 @@
-import { Scale, Code2, ShieldAlert, AlertTriangle, FileX, Gavel } from 'lucide-react';
+import { Scale, Code2, ShieldAlert, AlertTriangle, FileX, Gavel, ShieldCheck } from 'lucide-react';
 
 type Paragraph = { heading?: string; text: string; isCritical?: boolean };
 
@@ -130,7 +130,7 @@ export default function EulaPage() {
                     {/* Header */}
                     <div className="mb-12">
                         <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 text-xs font-black uppercase tracking-widest mb-6">
-                            <Scale size={13} />
+                            <ShieldCheck size={13} />
                             <span>Yasal Belgeler</span>
                         </div>
                         <h1 className="text-5xl md:text-6xl font-black tracking-tight text-white leading-tight mb-4">
