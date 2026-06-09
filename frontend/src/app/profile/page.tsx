@@ -18,6 +18,15 @@ interface Advert {
     is_deleted?: boolean;
 }
 
+const TYPE_MAP: Record<string, string> = {
+    secondhand: 'İkinci El',
+    roommate: 'Ev/Oda Arkadaşı',
+    carpooling: 'Yol Arkadaşı',
+    course: 'Özel Ders',
+    job: 'İş / Staj',
+    scholarship: 'Burs'
+};
+
 export default function ProfilePage() {
     const router = useRouter();
 
@@ -424,7 +433,9 @@ export default function ProfilePage() {
                                             <div>
                                                 <h3 className="font-bold text-lg text-gray-100 group-hover:text-cyan-400 transition-colors line-clamp-1">{advert.title}</h3>
                                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-[10px] sm:text-xs font-medium text-gray-500">
-                                                    <span className="bg-white/5 px-2 py-1 rounded-md uppercase text-cyan-400">{advert.category || 'Genel'}</span>
+                                                    <span className="bg-white/5 px-2 py-1 rounded-md uppercase text-cyan-400">
+                                                        {TYPE_MAP[advert.type || ''] || advert.category || 'Genel'}
+                                                    </span>
 
                                                     {/* DOĞRUDAN STATUS BİLGİSİNE GÖRE ETİKET */}
                                                     {advert.is_deleted ? (
@@ -457,7 +468,6 @@ export default function ProfilePage() {
                                                     </button>
                                                 )}
 
-                                                {/* YENİDEN YAYINLA BUTONU (Sadece backend'den "expired" gelen ve silinmemiş ilanlarda) */}
                                                 {(advert.status === 'expired' && !advert.is_deleted) && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleRepublish(advert._id); }}
