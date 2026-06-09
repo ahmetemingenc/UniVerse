@@ -7,7 +7,7 @@ import {
     ChevronLeft, Heart, Share2, MessageSquare, MapPin, Calendar,
     User, ShieldCheck, Tag, Info, Loader2, Eye, AlertTriangle,
     Star, Send, Navigation, BookOpen, Briefcase, Link as LinkIcon,
-    ListPlus, Clock, GraduationCap
+    ListPlus, Clock, GraduationCap, Bookmark, Folder, Plus, Check
 } from 'lucide-react';
 
 // a helper object for translating category types into Turkish
@@ -60,6 +60,11 @@ export default function AdDetailPage() {
     const [commentLoading, setCommentLoading] = useState(false);
     const [commentError, setCommentError] = useState<string | null>(null);
     const [commentSuccess, setCommentSuccess] = useState<string | null>(null);
+
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    const [userSavedLists, setUserSavedLists] = useState<Record<string, any[]>>({});
+    const [newListName, setNewListName] = useState('');
+    const [saveLoading, setSaveLoading] = useState(false);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://universe-1-vdkr.onrender.com';
 
@@ -133,6 +138,17 @@ export default function AdDetailPage() {
                     }
                 } catch (agreementErr) { console.warn(agreementErr); }
 
+                try {
+                    const savedRes = await fetch(`${API_URL}/api/user/me/saved`, {
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (savedRes.ok) {
+                        const savedData = await savedRes.json();
+                        setUserSavedLists(savedData.saved_listings || {});
+                    }
+                } catch (savedErr) { console.warn(savedErr); }
+
             } catch (err: any) {
                 console.warn(err);
                 setIsMockData(true);
@@ -181,6 +197,29 @@ export default function AdDetailPage() {
             });
             if (!response.ok) setIsFavorite(previousState);
         } catch (error) { setIsFavorite(previousState); }
+    };
+
+    const handleToggleSaveList = async (listName: string) => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        setSaveLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/user/me/saved`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ listingId: id, listName })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setUserSavedLists(data.saved_listings);
+                setNewListName(''); // input'u temizle
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSaveLoading(false);
+        }
     };
 
     const handleSubmitComment = async (e: React.FormEvent) => {
@@ -414,6 +453,63 @@ export default function AdDetailPage() {
                 </div>
             )}
 
+            {/* KAYDET (KOLEKSİYON) MODALI */}
+            {isSaveModalOpen && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#0B0F19] border border-blue-500/30 rounded-3xl w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[80vh]">
+                        <div className="flex items-center justify-between p-5 border-b border-white/10 bg-white/5 shrink-0">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2"><Bookmark size={20} className="text-blue-400"/> Koleksiyona Kaydet</h3>
+                            <button onClick={() => setIsSaveModalOpen(false)} className="text-gray-400 hover:text-white"><Plus size={20} /></button>
+                        </div>
+
+                        <div className="p-5 overflow-y-auto flex-1 space-y-2 custom-scrollbar">
+                            {Object.keys(userSavedLists).length === 0 ? (
+                                <p className="text-sm text-gray-500 text-center py-4">Henüz bir koleksiyonunuz yok.</p>
+                            ) : (
+                                Object.entries(userSavedLists).map(([listName, items]) => {
+                                    const isSavedHere = items.some((item: any) => item._id === id);
+                                    return (
+                                        <button
+                                            key={listName}
+                                            onClick={() => handleToggleSaveList(listName)}
+                                            disabled={saveLoading}
+                                            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-colors text-left group disabled:opacity-50"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Folder size={18} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
+                                                <span className="text-gray-200 font-medium text-sm">{listName}</span>
+                                            </div>
+                                            {isSavedHere ? <Check size={18} className="text-blue-500" /> : <Plus size={18} className="text-gray-600 opacity-0 group-hover:opacity-100" />}
+                                        </button>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        <div className="p-5 border-t border-white/10 bg-black/40 shrink-0">
+                            <label className="block text-xs font-semibold text-gray-400 mb-2">YENİ KOLEKSİYON OLUŞTUR</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newListName}
+                                    onChange={(e) => setNewListName(e.target.value)}
+                                    placeholder="Örn: Ev Eşyaları..."
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
+                                    onKeyDown={(e) => { if(e.key === 'Enter' && newListName.trim()) handleToggleSaveList(newListName.trim()) }}
+                                />
+                                <button
+                                    onClick={() => handleToggleSaveList(newListName.trim())}
+                                    disabled={saveLoading || !newListName.trim()}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-colors"
+                                >
+                                    Ekle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {isMockData && (
                 <div className="absolute top-20 left-0 w-full bg-amber-500/20 border-b border-amber-500/50 py-2 z-40 flex items-center justify-center gap-2 backdrop-blur-md">
                     <AlertTriangle size={16} className="text-amber-500" />
@@ -443,6 +539,10 @@ export default function AdDetailPage() {
                         <button onClick={handleToggleFavorite} className={`flex items-center space-x-2 transition-colors ${isFavorite ? 'text-rose-500' : 'text-gray-400 hover:text-rose-400'}`}>
                             <Heart size={18} className={`transition-all ${isFavorite ? "fill-rose-500 scale-110" : ""}`} />
                             <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Favori</span>
+                        </button>
+                        <button onClick={() => setIsSaveModalOpen(true)} className={`flex items-center space-x-2 transition-colors text-gray-400 hover:text-blue-400`}>
+                            <Bookmark size={18} className={`transition-all ${Object.values(userSavedLists).some(list => list.some(l => l._id === id)) ? "fill-blue-500 text-blue-500" : ""}`} />
+                            <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Kaydet</span>
                         </button>
                     </div>
                 </div>

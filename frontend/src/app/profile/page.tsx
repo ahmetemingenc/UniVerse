@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Heart, Settings, Trash2, Edit3, ExternalLink, User, MapPin, Calendar, AlertTriangle, X, CheckCircle, Star, Mail, Phone, GraduationCap, Shield, Loader2, RefreshCw, Briefcase, Camera, FileText } from 'lucide-react';
-
+import { Package, Heart, Settings, Trash2, Edit3, ExternalLink, User, MapPin, Calendar, AlertTriangle, X, CheckCircle, Star, Mail, Phone, GraduationCap, Shield, Loader2, RefreshCw, Briefcase, Camera, FileText, Bookmark, Folder, FolderOpen } from 'lucide-react';
 interface Advert {
     _id: string;
     title: string;
@@ -30,7 +29,7 @@ const TYPE_MAP: Record<string, string> = {
 export default function ProfilePage() {
     const router = useRouter();
 
-    const [activeTab, setActiveTab] = useState<'adverts' | 'favorites' | 'settings'>('adverts');
+    const [activeTab, setActiveTab] = useState<'adverts' | 'favorites' | 'saved' | 'settings'>('adverts');
     const [userData, setUserData] = useState<any>(null);
     const [myAdverts, setMyAdverts] = useState<Advert[]>([]);
     const [myFavorites, setMyFavorites] = useState<any[]>([]);
@@ -50,6 +49,8 @@ export default function ProfilePage() {
 
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+    const [savedCollections, setSavedCollections] = useState<Record<string, any[]>>({});
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -124,6 +125,47 @@ export default function ProfilePage() {
             fetchFavorites();
         }
     }, [activeTab, userData, API_URL]);
+
+    // get saved collections
+    useEffect(() => {
+        if (activeTab === 'saved' && userData) {
+            const fetchSavedCollections = async () => {
+                const token = localStorage.getItem('accessToken');
+                try {
+                    setTabLoading(true);
+                    const res = await fetch(`${API_URL}/api/user/me/saved`, {
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    if (res.ok) setSavedCollections(data.saved_listings || {});
+                } catch (err) {
+                    console.error("Koleksiyonlar çekilemedi:", err);
+                } finally {
+                    setTabLoading(false);
+                }
+            };
+            fetchSavedCollections();
+        }
+    }, [activeTab, userData, API_URL]);
+
+    const handleRemoveFromSaved = async (listingId: string, listName: string) => {
+        const token = localStorage.getItem('accessToken');
+        try {
+            const res = await fetch(`${API_URL}/api/user/me/saved`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ listingId, listName })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSavedCollections(data.saved_listings || {});
+                setToastMessage(`İlan '${listName}' koleksiyonundan çıkarıldı.`);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     useEffect(() => {
         if (toastMessage) {
@@ -469,6 +511,10 @@ export default function ProfilePage() {
                         <Heart size={20} /> Favorilerim
                     </button>
 
+                    <button onClick={() => setActiveTab('saved')} className={`p-4 rounded-2xl flex items-center gap-3 font-semibold transition-all ${activeTab === 'saved' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200'}`}>
+                        <Bookmark size={20} /> Koleksiyonlarım
+                    </button>
+
                     <button
                         onClick={() => router.push('/my-applications')}
                         className="p-4 rounded-2xl flex items-center gap-3 font-semibold transition-all bg-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200"
@@ -600,6 +646,53 @@ export default function ProfilePage() {
                                                 <button onClick={() => router.push(`/listings/${fav._id}`)} className="px-4 py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 font-semibold hover:bg-cyan-500 hover:text-black transition-all flex items-center gap-2">İlana Git <ExternalLink size={16} /></button>
                                                 <button onClick={() => handleRemoveFavorite(fav._id)} className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all"><Heart size={18} className="fill-current" /></button>
                                             </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'saved' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            <h2 className="text-xl font-bold text-white border-b border-white/10 pb-4 flex items-center gap-2"><FolderOpen className="text-indigo-400"/> Koleksiyonlarım</h2>
+
+                            {tabLoading ? (
+                                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /></div>
+                            ) : Object.keys(savedCollections).length === 0 ? (
+                                <p className="text-sm text-gray-500 text-center py-8 bg-white/5 rounded-2xl border border-white/10">Henüz hiçbir ilan koleksiyonu oluşturmadınız.</p>
+                            ) : (
+                                Object.entries(savedCollections).map(([listName, items]) => (
+                                    <div key={listName} className="bg-black/20 border border-white/10 rounded-3xl p-6">
+                                        <h3 className="text-lg font-black text-indigo-400 mb-4 flex items-center gap-2 uppercase tracking-wide">
+                                            <Folder size={20} /> {listName} <span className="text-xs font-medium text-gray-500 ml-2 bg-white/5 px-2 py-0.5 rounded-full">{items.length} İlan</span>
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {items.map((savedItem: any) => (
+                                                <div key={savedItem._id} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-4 group hover:border-indigo-500/30 transition-all">
+                                                    <div className="w-16 h-16 rounded-xl bg-[#0B0F19] overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => router.push(`/listings/${savedItem._id}`)}>
+                                                        {savedItem.photos?.length > 0 ? (
+                                                            <img src={savedItem.photos[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                        ) : (
+                                                            <Package size={20} className="w-full h-full p-4 text-gray-600" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                                        <h4 className="text-sm font-bold text-gray-200 truncate cursor-pointer hover:text-indigo-400" onClick={() => router.push(`/listings/${savedItem._id}`)}>{savedItem.title}</h4>
+                                                        <div className="flex items-center justify-between mt-2">
+                                                            <span className="text-sm font-black text-emerald-400">{savedItem.price ? `₺${savedItem.price}` : 'Ücretsiz'}</span>
+                                                            <button
+                                                                onClick={() => handleRemoveFromSaved(savedItem._id, listName)}
+                                                                title="Koleksiyondan Çıkar"
+                                                                className="text-gray-500 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 ))
