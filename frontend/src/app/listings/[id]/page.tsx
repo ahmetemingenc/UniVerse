@@ -7,7 +7,7 @@ import {
     ChevronLeft, Heart, Share2, MessageSquare, MapPin, Calendar,
     User, ShieldCheck, Tag, Info, Loader2, Eye, AlertTriangle,
     Star, Send, Navigation, BookOpen, Briefcase, Link as LinkIcon,
-    ListPlus, Clock, GraduationCap, Bookmark, Folder, Plus, Check
+    ListPlus, Clock, GraduationCap, Bookmark, Folder, Plus, Check, X
 } from 'lucide-react';
 
 // a helper object for translating category types into Turkish
