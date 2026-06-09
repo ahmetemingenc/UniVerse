@@ -900,7 +900,7 @@ export default function CreateListingWizard() {
                                     <div className="bg-black/30 rounded-xl p-3 mb-4 space-y-2 border border-white/5">
                                         {selectedCat === 'carpool' && (
                                             <>
-                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Güzergah:</span> <span className="text-emerald-400 font-bold">{formData.origin || '?'} -> {formData.destination || '?'}</span></div>
+                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Güzergah:</span> <span className="text-emerald-400 font-bold">{formData.origin || '?'} {"->"} {formData.destination || '?'}</span></div>
                                                 <div className="flex justify-between text-xs"><span className="text-gray-500">Tarih:</span> <span className="text-gray-300">{formData.departure_date ? new Date(formData.departure_date).toLocaleString('tr-TR', {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}</span></div>
                                                 <div className="flex justify-between text-xs"><span className="text-gray-500">Boş Koltuk:</span> <span className="text-gray-300">{formData.available_seats || '-'}</span></div>
                                             </>
