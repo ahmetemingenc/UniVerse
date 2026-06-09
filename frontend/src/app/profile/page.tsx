@@ -11,6 +11,7 @@ interface Advert {
     price: number;
     category: string;
     createdAt: string;
+    expires?: string; // BU ALAN EKLENDİ
     owner: any;
     photos?: string[];
     status?: string;
@@ -399,64 +400,71 @@ export default function ProfilePage() {
                             {myAdverts.length === 0 ? (
                                 <p className="text-sm text-gray-500">Henüz yayınlanmış bir ilanınız bulunmuyor.</p>
                             ) : (
-                                myAdverts.map((advert) => (
-                                    <div key={advert._id} className="group bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-cyan-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                myAdverts.map((advert) => {
+                                    // SÜRE KONTROLÜ: Status 'expired' mı VEYA expires tarihi bugünden küçük mü?
+                                    const isExpired = advert.status === 'expired' || (advert.expires && new Date(advert.expires) <= new Date());
 
-                                        {/* TIKLANABİLİR ALAN: Fotoğraf ve Başlık Yan Yana */}
-                                        <div
-                                            className="flex items-center gap-4 cursor-pointer flex-1"
-                                            onClick={() => router.push(`/listings/${advert._id}`)}
-                                        >
-                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[#0B0F19] border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                                {advert.photos && advert.photos.length > 0 ? (
-                                                    <img src={advert.photos[0]} alt={advert.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                                ) : (
-                                                    <Package size={24} className="text-gray-600" />
-                                                )}
+                                    return (
+                                        <div key={advert._id} className="group bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-cyan-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+                                            {/* TIKLANABİLİR ALAN: Fotoğraf ve Başlık Yan Yana */}
+                                            <div
+                                                className="flex items-center gap-4 cursor-pointer flex-1"
+                                                onClick={() => router.push(`/listings/${advert._id}`)}
+                                            >
+                                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[#0B0F19] border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                    {advert.photos && advert.photos.length > 0 ? (
+                                                        <img src={advert.photos[0]} alt={advert.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                    ) : (
+                                                        <Package size={24} className="text-gray-600" />
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <h3 className="font-bold text-lg text-gray-100 group-hover:text-cyan-400 transition-colors line-clamp-1">{advert.title}</h3>
+                                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-[10px] sm:text-xs font-medium text-gray-500">
+                                                        <span className="bg-white/5 px-2 py-1 rounded-md uppercase text-cyan-400">{advert.category || 'Genel'}</span>
+
+                                                        {/* GELİŞMİŞ DURUM ETİKETİ */}
+                                                        {advert.is_deleted ? (
+                                                            <span className="bg-rose-500/20 px-2 py-1 rounded-md uppercase text-rose-400 font-bold">Silindi</span>
+                                                        ) : isExpired ? (
+                                                            <span className="bg-amber-500/20 px-2 py-1 rounded-md uppercase text-amber-400 font-bold">Süresi Doldu</span>
+                                                        ) : advert.status === 'sold' ? (
+                                                            <span className="bg-blue-500/20 px-2 py-1 rounded-md uppercase text-blue-400 font-bold">Satıldı</span>
+                                                        ) : (
+                                                            <span className="bg-emerald-500/20 px-2 py-1 rounded-md uppercase text-emerald-400 font-bold">Aktif</span>
+                                                        )}
+
+                                                        <span className="flex items-center gap-1"><Calendar size={12}/> {new Date(advert.createdAt).toLocaleDateString('tr-TR')}</span>
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            <div>
-                                                <h3 className="font-bold text-lg text-gray-100 group-hover:text-cyan-400 transition-colors line-clamp-1">{advert.title}</h3>
-                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-[10px] sm:text-xs font-medium text-gray-500">
-                                                    <span className="bg-white/5 px-2 py-1 rounded-md uppercase text-cyan-400">{advert.category || 'Genel'}</span>
+                                            {/* Fiyat ve İşlem Butonları */}
+                                            <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-white/10 md:border-0 shrink-0">
+                                                <span className="text-xl font-black text-emerald-400">₺{advert.price}</span>
+                                                <div className="flex items-center gap-2">
 
-                                                    {/* DURUM ETİKETİ (STATUS BADGE) */}
-                                                    {advert.is_deleted ? (
-                                                        <span className="bg-rose-500/20 px-2 py-1 rounded-md uppercase text-rose-400 font-bold">Silindi</span>
-                                                    ) : advert.status !== 'active' ? (
-                                                        <span className="bg-amber-500/20 px-2 py-1 rounded-md uppercase text-amber-400 font-bold">Süresi Doldu</span>
-                                                    ) : (
-                                                        <span className="bg-emerald-500/20 px-2 py-1 rounded-md uppercase text-emerald-400 font-bold">Aktif</span>
+                                                    {/* YENİDEN YAYINLA BUTONU (Sadece süresi dolmuş ama silinmemiş ilanlarda görünür) */}
+                                                    {(isExpired && !advert.is_deleted) && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleRepublish(advert._id); }}
+                                                            title="Yeniden Yayınla"
+                                                            className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                                                        >
+                                                            <RefreshCw size={18} />
+                                                        </button>
                                                     )}
 
-                                                    <span className="flex items-center gap-1"><Calendar size={12}/> {new Date(advert.createdAt).toLocaleDateString('tr-TR')}</span>
+                                                    <button onClick={(e) => { e.stopPropagation(); openEditModal(advert); }} className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all"><Edit3 size={18} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); confirmDelete(advert._id); }} className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={18} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); router.push(`/listings/${advert._id}`); }} className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-white transition-all hidden sm:block"><ExternalLink size={18} /></button>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Fiyat ve İşlem Butonları */}
-                                        <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-white/10 md:border-0 shrink-0">
-                                            <span className="text-xl font-black text-emerald-400">₺{advert.price}</span>
-                                            <div className="flex items-center gap-2">
-
-                                                {/* YENİDEN YAYINLA BUTONU (Sadece inaktif veya silinmiş ilanlarda görünür) */}
-                                                {(advert.status !== 'active' || advert.is_deleted) && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleRepublish(advert._id); }}
-                                                        title="Yeniden Yayınla"
-                                                        className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_10px_rgba(16,185,129,0.1)]"
-                                                    >
-                                                        <RefreshCw size={18} />
-                                                    </button>
-                                                )}
-
-                                                <button onClick={(e) => { e.stopPropagation(); openEditModal(advert); }} className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all"><Edit3 size={18} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); confirmDelete(advert._id); }} className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={18} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); router.push(`/listings/${advert._id}`); }} className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-white transition-all hidden sm:block"><ExternalLink size={18} /></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     )}
