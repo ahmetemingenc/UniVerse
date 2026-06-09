@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface CountdownTimerProps {
     expiresAt?: string;
@@ -11,38 +11,57 @@ export default function CountdownTimer({ expiresAt, onComplete }: CountdownTimer
     const [timeLeft, setTimeLeft] = useState('');
     const [isFinished, setIsFinished] = useState(false);
 
+    // Parent'tan gelen onComplete fonksiyonunu referans olarak tutuyoruz.
+    // Bu sayede fonksiyon her render'da değişse bile useEffect'i yeniden tetiklemez.
+    const onCompleteRef = useRef(onComplete);
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
+
     useEffect(() => {
         if (!expiresAt) {
             setTimeLeft("...");
             return;
         }
 
-        const calculateTimeLeft = () => {
+        let timer: NodeJS.Timeout;
+
+        const updateTimer = () => {
             const difference = new Date(expiresAt).getTime() - new Date().getTime();
 
+            // SÜRE DOLDUYSA
             if (difference <= 0) {
-                if (!isFinished) {
-                    setIsFinished(true);
-                    if (onComplete) onComplete();
+                setTimeLeft("SÜRE DOLDU");
+                setIsFinished(true);
+
+                if (onCompleteRef.current) {
+                    onCompleteRef.current(); // Callback'i tetikle
                 }
-                return "SÜRE DOLDU";
+
+                clearInterval(timer); // Sayacı arka planda boşuna çalıştırma
+                return;
             }
 
-            const h = Math.floor((difference / (1000 * 60 * 60)) % 24);
+            // SAAT HESAPLAMA (% 24 kaldırdık ki 24 saat tam olarak 24:00:00 diye başlasın)
+            const h = Math.floor(difference / (1000 * 60 * 60));
             const m = Math.floor((difference / 1000 / 60) % 60);
             const s = Math.floor((difference / 1000) % 60);
 
-            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            setTimeLeft(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
         };
 
-        setTimeLeft(calculateTimeLeft());
+        // Bileşen yüklendiğinde ilk hesaplamayı yap (1 saniye gecikmeyi önler)
+        updateTimer();
 
-        const timer = setInterval(() => {
-            setTimeLeft(calculateTimeLeft());
-        }, 1000);
+        // Her saniye başı güncelle
+        timer = setInterval(updateTimer, 1000);
 
+        // Cleanup: Bileşen ekrandan silindiğinde sayacı durdur
         return () => clearInterval(timer);
-    }, [expiresAt, isFinished, onComplete]);
+
+        // Bağımlılık dizisinden isFinished ve onComplete'i sildik!
+        // Artık sadece expiresAt değiştiğinde sayaç yeniden kurulacak.
+    }, [expiresAt]);
 
     if (!timeLeft) return <span className="w-16 h-6 inline-block animate-pulse bg-white/5 rounded-md"></span>;
 

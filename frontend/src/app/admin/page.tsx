@@ -94,8 +94,10 @@ export default function AdminDashboardPage() {
         setIsUserSearching(true);
         setUserDetails(null);
         try {
-            const res = await fetchWithAuth(`/api/admin/users/${userSearchQuery}/details`);
-            if (!res.ok) throw new Error("Kullanıcı bulunamadı (Lütfen tam ID giriniz)");
+            const cleanQuery = userSearchQuery.trim().replace(/^@/, '');
+
+            const res = await fetchWithAuth(`/api/admin/users/${cleanQuery}/details`);
+            if (!res.ok) throw new Error("Kullanıcı bulunamadı.");
             setUserDetails(await res.json());
         } catch (err: any) {
             showToast(err.message, 'error');
@@ -257,7 +259,13 @@ export default function AdminDashboardPage() {
                                 <form onSubmit={handleUserSearch} className="flex gap-3 mb-8">
                                     <div className="relative flex-1">
                                         <Search className="absolute left-4 top-3.5 text-gray-500" size={20}/>
-                                        <input type="text" value={userSearchQuery} onChange={(e)=>setUserSearchQuery(e.target.value)} placeholder="Kullanıcı Mongo ID'si..." className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white outline-none focus:border-rose-500/50" />
+                                        <input
+                                            type="text"
+                                            value={userSearchQuery}
+                                            onChange={(e)=>setUserSearchQuery(e.target.value)}
+                                            placeholder="Kullanıcı ID veya Username (örn: ahmet)..."
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white outline-none focus:border-rose-500/50"
+                                        />
                                     </div>
                                     <button type="submit" disabled={isUserSearching} className="bg-rose-600 hover:bg-rose-500 text-white px-6 rounded-xl font-bold transition-all disabled:opacity-50">
                                         {isUserSearching ? <Loader2 size={20} className="animate-spin"/> : 'Ara'}
