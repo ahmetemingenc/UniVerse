@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Heart, Settings, Trash2, Edit3, ExternalLink, User, MapPin, Calendar, AlertTriangle, X, CheckCircle, Star, Mail, Phone, GraduationCap, Shield, Loader2, RefreshCw, Briefcase, FileText } from 'lucide-react';
+import { Package, Heart, Settings, Trash2, Edit3, ExternalLink, User, MapPin, Calendar, AlertTriangle, X, CheckCircle, Star, Mail, Phone, GraduationCap, Shield, Loader2, RefreshCw, Briefcase, Camera, FileText } from 'lucide-react';
 
 interface Advert {
     _id: string;
@@ -46,6 +46,10 @@ export default function ProfilePage() {
     const [itemToEdit, setItemToEdit] = useState<any>(null);
 
     const [newPassword, setNewPassword] = useState('');
+    const [oldPassword, setOldPassword] = useState('');
+
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -227,11 +231,6 @@ export default function ProfilePage() {
                 university: userData.university
             };
 
-            if (newPassword.trim() !== '') {
-                payload.password = newPassword;
-            }
-
-            // 6. DÜZELTME: PROFİL GÜNCELLERKEN API_URL ENTEGRE EDİLDİ
             const response = await fetch(`${API_URL}/api/user/me`, {
                 method: 'PATCH',
                 headers: {
@@ -252,6 +251,69 @@ export default function ProfilePage() {
             setToastMessage('Sunucuyla iletişim kurulamadı.');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    // profile photo update
+    const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const token = localStorage.getItem('accessToken');
+        const formData = new FormData();
+        formData.append('profile_photo', file);
+
+        setIsUploadingPhoto(true);
+        try {
+            const response = await fetch(`${API_URL}/api/user/me/profile-photo`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                setUserData({ ...userData, profile_photo: data.profile_photo });
+                setToastMessage(data.message || 'Profil fotoğrafınız güncellendi.');
+            } else {
+                setToastMessage(data.error || 'Fotoğraf yüklenemedi.');
+            }
+        } catch (err) {
+            setToastMessage('Bağlantı hatası.');
+        } finally {
+            setIsUploadingPhoto(false);
+        }
+    };
+
+    // password update
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newPassword) return;
+
+        const token = localStorage.getItem('accessToken');
+        setIsChangingPassword(true);
+        try {
+            const response = await fetch(`${API_URL}/api/user/me/change-password`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ oldPassword, newPassword })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                setToastMessage(data.message || 'Şifreniz güncellendi.');
+                setOldPassword('');
+                setNewPassword('');
+            } else {
+                setToastMessage(data.error || 'Şifre güncellenemedi.');
+            }
+        } catch (err) {
+            setToastMessage('Bağlantı hatası.');
+        } finally {
+            setIsChangingPassword(false);
         }
     };
 
@@ -347,12 +409,25 @@ export default function ProfilePage() {
 
                 <div className="px-6 pb-6 md:px-10 md:pb-10 relative">
                     <div className="flex flex-col md:flex-row gap-6 md:items-end -mt-16 md:-mt-20 relative z-10">
-                        <div className="w-32 h-32 rounded-full border-4 border-[#0B0F19] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.3)] overflow-hidden">
+                        <div className="w-32 h-32 rounded-full border-4 border-[#0B0F19] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.3)] overflow-hidden relative group">
                             {userData.profile_photo ? (
                                 <img src={userData.profile_photo} alt="Profil" className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-4xl font-black text-white">{userData.name?.charAt(0)}{userData.surname?.charAt(0)}</span>
                             )}
+
+                            {/* HOVER EFEKTİ VE DOSYA SEÇİCİ */}
+                            <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-20 backdrop-blur-sm">
+                                {isUploadingPhoto ? (
+                                    <Loader2 className="animate-spin text-cyan-400" size={28} />
+                                ) : (
+                                    <>
+                                        <Camera className="text-white mb-1" size={24} />
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">Değiştir</span>
+                                    </>
+                                )}
+                                <input type="file" className="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" onChange={handlePhotoChange} disabled={isUploadingPhoto} />
+                            </label>
                         </div>
 
                         <div className="flex-1">
