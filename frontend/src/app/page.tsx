@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     Search, PlusCircle, Flame, TrendingUp,
     MapPin, Clock, ImageIcon, ChevronRight,
-    HandHeart, Briefcase, FileText
+    HandHeart, Briefcase, FileText, AlertTriangle
 } from 'lucide-react';
 
 interface Advert {
@@ -189,31 +189,35 @@ export default function Home() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {urgentListings.map((item) => (
-                                            <div onClick={() => window.location.href=`/emergencies/${item._id}`} key={item._id} className="group bg-black/40 backdrop-blur-xl border border-rose-500/20 hover:border-rose-500/50 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)] flex flex-col cursor-pointer">
-                                                <div className="h-48 bg-gradient-to-br from-gray-900 to-black relative flex items-center justify-center overflow-hidden border-b border-rose-500/10">
-                                                    {item.photos && item.photos.length > 0 ? (
-                                                        <img src={item.photos[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                                    ) : (
-                                                        <ImageIcon size={48} className="text-white/10 group-hover:scale-110 transition-transform duration-500" />
-                                                    )}
-                                                    <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-rose-500/90 backdrop-blur-md text-white text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-lg shadow-rose-500/30">
-                                                        <Flame size={14} /> Acil
+                                            <div
+                                                onClick={() => window.location.href=`/emergencies/${item._id}`}
+                                                key={item._id}
+                                                className="group relative bg-[#0B0F19]/60 backdrop-blur-xl border border-rose-500/30 hover:border-rose-500/60 rounded-3xl p-6 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(225,29,72,0.2)] flex flex-col cursor-pointer overflow-hidden"
+                                            >
+                                                {/* Arka plan kırmızı parlama efekti */}
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-rose-600/10 rounded-full blur-[50px] group-hover:bg-rose-600/20 transition-colors"></div>
+
+                                                <div className="flex items-start justify-between mb-4 relative z-10">
+                                                    <div className="flex items-center space-x-2 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-lg">
+                                                        <AlertTriangle size={14} className="text-rose-400" />
+                                                        <span className="text-xs font-bold text-rose-300 uppercase tracking-wider">ACİL</span>
                                                     </div>
                                                 </div>
-                                                <div className="p-6">
-                                                    <h3 className="text-lg font-bold text-gray-100 leading-tight group-hover:text-rose-300 transition-colors line-clamp-2 mb-3">
+
+                                                <div className="mb-6 relative z-10 flex-1">
+                                                    <h3 className="text-xl font-black text-white leading-tight group-hover:text-rose-300 transition-colors line-clamp-3">
                                                         {item.title}
                                                     </h3>
-                                                    <div className="text-2xl font-black text-white mb-4">
-                                                        {item.price ? `${item.price} ₺` : 'Ücretsiz'}
+                                                </div>
+
+                                                <div className="pt-4 border-t border-rose-500/10 flex justify-between items-center relative z-10">
+                                                    <div className="flex items-center text-gray-300 text-xs font-medium bg-white/5 border border-white/5 px-2 py-1 rounded-md">
+                                                        <MapPin size={14} className="mr-1.5 text-rose-500 flex-shrink-0" />
+                                                        <span className="truncate max-w-[140px]">{item.location || 'Kampüs'}</span>
                                                     </div>
-                                                    <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
-                                                        <div className="flex items-center bg-transparent border border-white/10 px-2.5 py-1.5 rounded-md truncate max-w-[60%]">
-                                                            <MapPin size={14} className="mr-1.5 text-rose-500 flex-shrink-0" /> <span className="truncate text-gray-300">{item.location || 'Kampüs'}</span>
-                                                        </div>
-                                                        <div className="flex items-center flex-shrink-0">
-                                                            <Clock size={14} className="mr-1 text-gray-600" /> {item.createdAt ? formatTime(item.createdAt) : 'Yeni'}
-                                                        </div>
+                                                    <div className="flex items-center text-gray-500 text-xs font-medium flex-shrink-0">
+                                                        <Clock size={14} className="mr-1" />
+                                                        <span>{item.createdAt ? formatTime(item.createdAt) : 'Yeni'}</span>
                                                     </div>
                                                 </div>
                                             </div>
