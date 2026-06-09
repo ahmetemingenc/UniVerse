@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Send, MapPin, Loader2, ArrowLeft, ArrowRight, Navigation, Tag, Store, CheckCheck, Check } from 'lucide-react';
+import { Send, MapPin, Loader2, ArrowLeft, ArrowRight, Navigation, Tag, Store, CheckCheck, Check, ShieldCheck } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 
 const darkMapStyle = [
@@ -544,6 +544,7 @@ function MessagesContent() {
 
                         {messages.map((msg) => {
                             const isSystem = msg.type === 'system';
+                            const isAdmin = msg.type === 'admin'; // YENİ: Admin kontrolü eklendi
                             const senderIdStr = typeof msg.sender === 'object' ? msg.sender?._id : msg.sender;
                             const isMe = senderIdStr === currentUserId;
 
@@ -551,6 +552,19 @@ function MessagesContent() {
                                 return (
                                     <div key={msg._id || Math.random()} className="flex justify-center w-full animate-in fade-in zoom-in-95 duration-300 my-2">
                                         <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center shadow-inner">
+                                            {msg.text}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (isAdmin) {
+                                return (
+                                    <div key={msg._id || Math.random()} className="flex flex-col justify-center items-center w-full animate-in fade-in zoom-in-95 duration-300 my-4">
+                                        <span className="text-[10px] mb-1.5 uppercase font-black tracking-widest text-rose-500 flex items-center gap-1">
+                                            <ShieldCheck size={14} /> Sistem Moderatörü
+                                        </span>
+                                        <div className="px-5 py-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 backdrop-blur-md text-sm font-medium text-rose-200 text-center shadow-[0_0_15px_rgba(244,63,94,0.15)] max-w-[85%]">
                                             {msg.text}
                                         </div>
                                     </div>

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-// 1. EKLENEN KISIM: Bileşeni import ediyoruz
 import SystemAnnouncement from "@/components/SystemAnnouncement";
+import GlobalChatWidget from '@/components/GlobalChatWidget';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +22,8 @@ export default function RootLayout({
         <body className={`${inter.className} bg-[#0B0F19] text-gray-100 antialiased min-h-screen flex flex-col`}>
 
         <Navbar />
+
+        <GlobalChatWidget />
 
         <SystemAnnouncement />
 
