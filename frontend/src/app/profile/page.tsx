@@ -696,26 +696,37 @@ export default function ProfilePage() {
                                     </div>
                                 )}
 
-                                {userData.auth_provider === 'local' && (
-                                    <div className="space-y-4 pt-4 border-t border-white/10">
-                                        <h3 className="text-sm font-bold text-rose-400 uppercase tracking-wider flex items-center gap-2">
-                                            <Shield size={16} /> Güvenlik
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Yeni Şifre (Değiştirmek istemiyorsanız boş bırakın)</label>
-                                                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full md:w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-rose-500/50 transition-colors" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
                                 <div className="pt-6 border-t border-white/10 flex justify-end">
                                     <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 transition-all text-black font-bold shadow-[0_0_20px_rgba(34,211,238,0.3)] disabled:opacity-50">
                                         {isSubmitting ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
                                     </button>
                                 </div>
                             </form>
+                            {userData.auth_provider === 'local' && (
+                                <form onSubmit={handlePasswordChange} className="space-y-4 pt-8 border-t border-white/10">
+                                    <h3 className="text-sm font-bold text-rose-400 uppercase tracking-wider flex items-center gap-2 mb-4">
+                                        <Shield size={16} /> Güvenlik (Şifre Değiştirme)
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Eğer kullanıcının zaten bir şifresi varsa eski şifreyi sor (hasExistingPassword mantığı) */}
+                                        {userData.password !== false && (
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Mevcut Şifreniz</label>
+                                                <input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-rose-500/50 transition-colors" />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-400 mb-1.5">Yeni Şifre</label>
+                                            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-rose-500/50 transition-colors" />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end mt-4">
+                                        <button type="submit" disabled={isChangingPassword || !newPassword} className="px-6 py-2.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all font-bold disabled:opacity-50 border border-rose-500/20">
+                                            {isChangingPassword ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
                     )}
                 </div>
