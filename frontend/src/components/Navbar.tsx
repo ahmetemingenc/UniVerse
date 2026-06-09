@@ -35,7 +35,6 @@ export default function Navbar() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
-                // Backend'den gelen is_admin bilgisini setle
                 setIsAdmin(data.user?.is_admin || data.is_admin || false);
             } catch (e) {
                 console.error("Auth kontrol hatası:", e);
@@ -123,13 +122,12 @@ export default function Navbar() {
     const handleLogout = () => {
         localStorage.removeItem('accessToken');
         setIsLoggedIn(false);
-        setIsAdmin(false); // Çıkışta admin state'ini de sıfırla
+        setIsAdmin(false);
         setIsDropdownOpen(false);
-
         window.dispatchEvent(new Event('auth_status_changed'));
         router.push('/');
+        router.refresh();
     };
-
     return (
         <nav className="fixed w-full z-50 top-0 backdrop-blur-xl bg-[#0B0F19]/60 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
 
