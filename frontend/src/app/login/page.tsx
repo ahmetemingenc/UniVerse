@@ -191,6 +191,14 @@ export default function LoginPage() {
                 <p className="text-center mt-8 text-gray-500 text-xs font-medium uppercase tracking-wider">
                     Henüz üye değil misin? <Link href="/register" className="text-cyan-400 font-black hover:underline ml-1">KAYIT OL</Link>
                 </p>
+
+                <div className="flex justify-center gap-4 mt-6 text-[10px] text-gray-600 uppercase font-bold tracking-widest">
+                    <Link href="/terms" className="hover:text-cyan-400 transition-colors">Koşullar</Link>
+                    <span className="opacity-30">|</span>
+                    <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Gizlilik</Link>
+                    <span className="opacity-30">|</span>
+                    <Link href="/eula" className="hover:text-cyan-400 transition-colors">EULA</Link>
+                </div>
             </div>
         </div>
     );

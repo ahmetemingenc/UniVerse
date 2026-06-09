@@ -15,6 +15,8 @@ export default function RegisterPage() {
 
     const [tempToken, setTempToken] = useState<string | null>(null);
 
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     const [formData, setFormData] = useState({
@@ -299,7 +301,27 @@ export default function RegisterPage() {
                             {fieldErrors.birthdate && <p className="text-[10px] text-red-400 ml-1 uppercase">{fieldErrors.birthdate}</p>}
                         </div>
 
-                        <button onClick={handleCompleteProfile} disabled={isLoading || successMessage !== null} className="w-full mt-4 flex items-center justify-center space-x-2 bg-emerald-500 hover:bg-emerald-400 text-[#0B0F19] py-3.5 rounded-xl font-black transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed">
+                        <div className="flex items-start gap-3 mt-4">
+                            <input
+                                type="checkbox"
+                                id="terms"
+                                checked={acceptedTerms}
+                                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                                className="mt-1 accent-cyan-500 rounded border-white/10"
+                            />
+                            <label htmlFor="terms" className="text-[11px] text-gray-400">
+                                <a href="/terms" target="_blank" className="text-cyan-400 hover:underline">Kullanım Koşulları</a>,
+                                <a href="/eula" target="_blank" className="text-cyan-400 hover:underline"> EULA</a> ve
+                                <a href="/privacy" target="_blank" className="text-cyan-400 hover:underline"> Gizlilik Politikası</a>'nı
+                                okudum, onaylıyorum.
+                            </label>
+                        </div>
+
+                        <button
+                            onClick={handleCompleteProfile}
+                            disabled={isLoading || successMessage !== null || !acceptedTerms} // !acceptedTerms eklendi
+                            className="w-full mt-4 flex items-center justify-center space-x-2 bg-emerald-500 hover:bg-emerald-400 text-[#0B0F19] py-3.5 rounded-xl font-black transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             {isLoading ? <Loader2 className="animate-spin" size={20} /> : <span>Kurulumu Tamamla</span>}
                         </button>
                     </div>
