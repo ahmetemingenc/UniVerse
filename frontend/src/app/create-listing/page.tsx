@@ -928,7 +928,7 @@ export default function CreateListingWizard() {
                                                 <ListPlus size={12}/> <span className="text-teal-400 font-bold">{criteriaList.length}</span> Kriter, <span className="text-teal-400 font-bold">{featuresList.length}</span> Özellik eklendi.
                                             </div>
                                         )}
-                                        {(!['carpool', 'job', 'scholarship', 'secondhand', 'notes', 'tutoring', 'roommate'].includes(selectedCat)) && (
+                                        {(!['carpool', 'job', 'scholarship', 'secondhand', 'notes', 'tutoring', 'roommate'].includes(selectedCat || '')) && (
                                             <p className="text-xs text-gray-400 line-clamp-2">{formData.description || "İlan açıklaması..."}</p>
                                         )}
                                     </div>
