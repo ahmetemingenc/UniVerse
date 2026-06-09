@@ -7,7 +7,7 @@ import {
     Briefcase, Car, Lock, ArrowRight, ArrowLeft,
     CheckCircle2, ImagePlus, TurkishLira, Calendar, MapPin,
     FileText, Award, Presentation, ShoppingBag, Home, Plus, X, Eye,
-    AlertTriangle, Link as LinkIcon, ListPlus, Tag, Map, Search
+    AlertTriangle, Link as LinkIcon, ListPlus, Tag, Map, Search, Clock
 } from 'lucide-react';
 
 const categories = [
@@ -854,28 +854,106 @@ export default function CreateListingWizard() {
                     <div className="animate-in fade-in slide-in-from-right-8 duration-500 space-y-6">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-white flex items-center gap-2"><Eye className="text-cyan-400" /> İlan Önizlemesi</h2>
-                            <span className="text-sm text-gray-500">Kullanıcılar ilanını böyle görecek.</span>
+                            <span className="text-sm text-gray-500">İlanınız akışta tam olarak böyle görünecek.</span>
                         </div>
 
-                        <div className="max-w-2xl mx-auto bg-[#0B0F19] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative group">
-                            <div className={`absolute top-0 left-0 w-full h-1 ${activeCatData.previewBg}`}></div>
-                            <div className="p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${activeCatData.previewPillBg} ${activeCatData.previewText} border ${activeCatData.previewBorder} inline-flex items-center gap-2`}>
-                                        <activeCatData.icon size={14} /> {activeCatData.title}
+                        {/* GERÇEKÇİ İLAN KARTI ÖNİZLEMESİ */}
+                        <div className="max-w-sm mx-auto bg-white/5 backdrop-blur-md border border-white/10 hover:border-cyan-500/30 rounded-2xl overflow-hidden transition-all shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col relative group">
+
+                            {/* 1. Görsel Alanı */}
+                            <div className="w-full h-56 bg-black/40 relative overflow-hidden flex items-center justify-center border-b border-white/5">
+                                {mediaPreviews.length > 0 ? (
+                                    <img
+                                        src={mediaPreviews[0].url}
+                                        alt="Preview"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center text-white/20">
+                                        <ImagePlus size={48} strokeWidth={1} />
+                                        <span className="text-xs mt-2 uppercase tracking-widest">Görsel Yok</span>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-black text-white flex items-center gap-1"><TurkishLira size={20} />{formData.price === '0' || !formData.price ? 'Ücretsiz' : formData.price}</div>
+                                )}
+
+                                {/* Kategori Rozeti (Resmin Üstünde) */}
+                                <div className="absolute top-3 left-3 z-10">
+                                    <span className={`px-3 py-1.5 ${activeCatData.previewPillBg} backdrop-blur-md border ${activeCatData.previewBorder} rounded-lg text-[10px] font-black uppercase tracking-wider ${activeCatData.previewText} shadow-xl flex items-center gap-1.5`}>
+                                        <activeCatData.icon size={12} />
+                                        {activeCatData.title}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* 2. İçerik Alanı */}
+                            <div className="p-5 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <h2 className="text-lg font-bold text-gray-100 leading-tight line-clamp-2 group-hover:text-cyan-300 transition-colors">
+                                            {formData.title || "İlan Başlığı Belirtilmedi"}
+                                        </h2>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-emerald-400 mb-4">
+                                        {formData.price && formData.price !== '0' ? `${Number(formData.price).toLocaleString('tr-TR')} ₺` : 'Ücretsiz'}
+                                    </h3>
+
+                                    {/* 3. Kategoriye Özel Dinamik Bilgi Kutusu */}
+                                    <div className="bg-black/30 rounded-xl p-3 mb-4 space-y-2 border border-white/5">
+                                        {selectedCat === 'carpool' && (
+                                            <>
+                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Güzergah:</span> <span className="text-emerald-400 font-bold">{formData.origin || '?'} -> {formData.destination || '?'}</span></div>
+                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Tarih:</span> <span className="text-gray-300">{formData.departure_date ? new Date(formData.departure_date).toLocaleString('tr-TR', {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '-'}</span></div>
+                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Boş Koltuk:</span> <span className="text-gray-300">{formData.available_seats || '-'}</span></div>
+                                            </>
+                                        )}
+                                        {(selectedCat === 'job' || selectedCat === 'scholarship') && (
+                                            <>
+                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Son Başvuru:</span> <span className="text-gray-300">{formData.deadline ? new Date(formData.deadline).toLocaleDateString('tr-TR') : 'Belirtilmedi'}</span></div>
+                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Bağlantı:</span> <span className="text-blue-400">{formData.application_url ? 'Mevcut' : 'Yok'}</span></div>
+                                            </>
+                                        )}
+                                        {selectedCat === 'secondhand' && (
+                                            <div className="flex justify-between text-xs"><span className="text-gray-500">Durum:</span> <span className="text-gray-300">{formData.condition === 'new' ? 'Sıfır' : formData.condition === 'like_new' ? 'Yeni Gibi' : formData.condition === 'good' ? 'İyi Durumda' : formData.condition === 'fair' ? 'Eski/Hasarlı' : '-'}</span></div>
+                                        )}
+                                        {selectedCat === 'notes' && (
+                                            <div className="flex justify-between text-xs"><span className="text-gray-500">Ders Kodu:</span> <span className="text-violet-400 font-bold uppercase">{formData.subcategory || '-'}</span></div>
+                                        )}
+                                        {selectedCat === 'tutoring' && (
+                                            <>
+                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Konu:</span> <span className="text-indigo-400 font-bold">{formData.subject || '-'}</span></div>
+                                                <div className="flex justify-between text-xs"><span className="text-gray-500">Format:</span> <span className="text-gray-300">{formData.format === 'online' ? 'Online' : formData.format === 'in_person' ? 'Yüz Yüze' : '-'}</span></div>
+                                            </>
+                                        )}
+                                        {selectedCat === 'roommate' && (
+                                            <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                <ListPlus size={12}/> <span className="text-teal-400 font-bold">{criteriaList.length}</span> Kriter, <span className="text-teal-400 font-bold">{featuresList.length}</span> Özellik eklendi.
+                                            </div>
+                                        )}
+                                        {(!['carpool', 'job', 'scholarship', 'secondhand', 'notes', 'tutoring', 'roommate'].includes(selectedCat)) && (
+                                            <p className="text-xs text-gray-400 line-clamp-2">{formData.description || "İlan açıklaması..."}</p>
+                                        )}
                                     </div>
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-100 mb-2">{formData.title}</h3>
-                                <p className="text-sm text-gray-400 mb-6 line-clamp-3 leading-relaxed">{formData.description}</p>
+
+                                {/* 4. Alt Bilgi (Konum / Zaman) */}
+                                <div className="pt-4 border-t border-white/5 flex flex-col space-y-2">
+                                    <div className="flex items-center text-gray-400 text-xs">
+                                        <MapPin size={14} className={`mr-1.5 ${activeCatData.previewText}`} />
+                                        <span className="truncate">
+                                            {selectedCat === 'carpool'
+                                                ? `${formData.origin || '?'} -> ${formData.destination || '?'}`
+                                                : (city && district ? `${district}, ${city}` : 'Konum Belirtilmemiş')}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center text-gray-500 text-xs">
+                                        <Clock size={14} className="mr-1.5" />
+                                        <span>Şimdi (Önizleme)</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
-
             <div className="flex items-center justify-between mt-8">
                 <button onClick={prevStep} disabled={step === 1} className={`flex items-center space-x-2 px-6 py-3 rounded-full font-bold transition-all ${step === 1 ? 'opacity-0 pointer-events-none' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                     <ArrowLeft size={20} /><span>Geri</span>
