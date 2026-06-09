@@ -459,7 +459,7 @@ export default function AdDetailPage() {
                     <div className="bg-[#0B0F19] border border-blue-500/30 rounded-3xl w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[80vh]">
                         <div className="flex items-center justify-between p-5 border-b border-white/10 bg-white/5 shrink-0">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2"><Bookmark size={20} className="text-blue-400"/> Koleksiyona Kaydet</h3>
-                            <button onClick={() => setIsSaveModalOpen(false)} className="text-gray-400 hover:text-white"><Plus size={20} /></button>
+                            <button onClick={() => setIsSaveModalOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
                         </div>
 
                         <div className="p-5 overflow-y-auto flex-1 space-y-2 custom-scrollbar">
