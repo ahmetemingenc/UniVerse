@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Heart, Settings, Trash2, Edit3, ExternalLink, User, MapPin, Calendar, AlertTriangle, X, CheckCircle, Star, Mail, Phone, GraduationCap, Shield, Loader2, RefreshCw, Briefcase } from 'lucide-react';
+import { Package, Heart, Settings, Trash2, Edit3, ExternalLink, User, MapPin, Calendar, AlertTriangle, X, CheckCircle, Star, Mail, Phone, GraduationCap, Shield, Loader2, RefreshCw, Briefcase, FileText } from 'lucide-react';
 
 interface Advert {
     _id: string;
@@ -10,6 +10,7 @@ interface Advert {
     description: string;
     price: number;
     category: string;
+    type?: string;
     createdAt: string;
     owner: any;
     photos?: string[];
@@ -441,10 +442,20 @@ export default function ProfilePage() {
                                             </div>
                                         </div>
 
-                                        {/* Fiyat ve İşlem Butonları */}
                                         <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-white/10 md:border-0 shrink-0">
                                             <span className="text-xl font-black text-emerald-400">₺{advert.price}</span>
                                             <div className="flex items-center gap-2">
+
+                                                {/* YENİ: SADECE İŞ VE BURS İLANLARINDA GÖZÜKEN BAŞVURULAR BUTONU */}
+                                                {(advert.type === 'job' || advert.type === 'scholarship') && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); router.push(`/listings/${advert._id}/applications`); }}
+                                                        title="Gelen Başvurular"
+                                                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-500/10 text-violet-400 hover:bg-violet-500 hover:text-white font-bold transition-all shadow-[0_0_10px_rgba(124,58,237,0.1)]"
+                                                    >
+                                                        <FileText size={18} /> <span className="hidden sm:inline">Başvurular</span>
+                                                    </button>
+                                                )}
 
                                                 {/* YENİDEN YAYINLA BUTONU (Sadece backend'den "expired" gelen ve silinmemiş ilanlarda) */}
                                                 {(advert.status === 'expired' && !advert.is_deleted) && (
