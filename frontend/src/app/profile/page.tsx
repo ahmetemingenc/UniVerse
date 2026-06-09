@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Heart, Settings, Trash2, Edit3, ExternalLink, User, MapPin, Calendar, AlertTriangle, X, CheckCircle, Star, Mail, Phone, GraduationCap, Shield, Loader2, RefreshCw } from 'lucide-react';
+import { Package, Heart, Settings, Trash2, Edit3, ExternalLink, User, MapPin, Calendar, AlertTriangle, X, CheckCircle, Star, Mail, Phone, GraduationCap, Shield, Loader2, RefreshCw, Briefcase } from 'lucide-react';
 
 interface Advert {
     _id: string;
@@ -383,6 +383,14 @@ export default function ProfilePage() {
                     <button onClick={() => setActiveTab('favorites')} className={`p-4 rounded-2xl flex items-center gap-3 font-semibold transition-all ${activeTab === 'favorites' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200'}`}>
                         <Heart size={20} /> Favorilerim
                     </button>
+
+                    <button
+                        onClick={() => router.push('/my-applications')}
+                        className="p-4 rounded-2xl flex items-center gap-3 font-semibold transition-all bg-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                    >
+                        <Briefcase size={20} /> Başvurularım
+                    </button>
+
                     <button onClick={() => setActiveTab('settings')} className={`p-4 rounded-2xl flex items-center gap-3 font-semibold transition-all ${activeTab === 'settings' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200'}`}>
                         <Settings size={20} /> Hesap Ayarları
                     </button>

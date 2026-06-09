@@ -51,6 +51,7 @@ export default function AdDetailPage() {
     const [canComment, setCanComment] = useState(false);
     // Dış bağlantı yönlendirme modalı
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+    const [isApplying, setIsApplying] = useState(false);
 
     const [comments, setComments] = useState<any[]>([]);
     const [newComment, setNewComment] = useState('');
@@ -212,6 +213,44 @@ export default function AdDetailPage() {
         }
     };
 
+    // Başvuruyu sisteme kaydedip linke yönlendiren fonksiyon
+    const handleTrackedApplication = async () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("Başvuru yapabilmek için giriş yapmalısınız.");
+            return;
+        }
+
+        setIsApplying(true);
+        try {
+            const response = await fetch(`${API_URL}/api/offer/apply`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ listingId: ad._id })
+            });
+
+            const data = await response.json();
+
+            // Eğer 409 (Zaten başvurdunuz) hatası dönerse, engelleme, sadece linke gitmesine izin ver.
+            // Diğer hatalarda uyarı ver.
+            if (!response.ok && response.status !== 409) {
+                throw new Error(data.error || 'Başvuru kaydedilemedi.');
+            }
+
+            // Başarılıysa (veya zaten başvurulmuşsa) modalı kapat ve linki aç
+            setIsApplyModalOpen(false);
+            window.open(ad.application_url, '_blank', 'noopener,noreferrer');
+
+        } catch (error: any) {
+            alert(error.message);
+        } finally {
+            setIsApplying(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen pt-28 flex flex-col items-center justify-center">
@@ -326,34 +365,49 @@ export default function AdDetailPage() {
     return (
         <div className="min-h-screen pt-28 pb-12 px-4 relative">
 
-            {/* Dış Bağlantı Uyarı Modalı */}
+            {/* Dış Bağlantı ve Başvuru Takip Modalı */}
             {isApplyModalOpen && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-[#0B0F19] border border-blue-500/30 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-[#0B0F19] border border-cyan-500/30 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex justify-center mb-4">
-                            <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
-                                <LinkIcon size={32} className="text-blue-500" />
+                            <div className="p-4 bg-cyan-500/10 rounded-full border border-cyan-500/20">
+                                <LinkIcon size={32} className="text-cyan-500" />
                             </div>
                         </div>
-                        <h3 className="text-xl font-bold text-white text-center mb-2">Dış Bağlantı Uyarısı</h3>
-                        <p className="text-gray-400 text-center text-sm mb-6">
-                            Başvuru için platform dışı bir bağlantıya yönlendirileceksiniz. Devam etmek istiyor musunuz?
+                        <h3 className="text-xl font-black text-white text-center mb-3">Başvuruyu Kaydet</h3>
+                        <p className="text-gray-400 text-sm text-center mb-8">
+                            Bu ilana başvurmak için harici bir siteye yönlendirileceksiniz. Yaptığınız başvurunun profilinizdeki <strong>"Başvurularım"</strong> sekmesinde görünmesini (sisteme kaydedilmesini) ister misiniz?
                         </p>
-                        <div className="flex gap-3">
+
+                        <div className="flex flex-col gap-3">
+                            {/* SEÇENEK 1: SİSTEME KAYDET VE LİNKE GİT */}
                             <button
-                                onClick={() => setIsApplyModalOpen(false)}
-                                className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-white font-medium"
+                                onClick={handleTrackedApplication}
+                                disabled={isApplying}
+                                className="w-full py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black font-bold transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)] disabled:opacity-50 flex justify-center items-center gap-2"
                             >
-                                İptal
+                                {isApplying ? <Loader2 size={18} className="animate-spin" /> : 'Sisteme Kaydet ve Linke Git'}
                             </button>
+
+                            {/* SEÇENEK 2: SADECE LİNKE GİT */}
                             <button
                                 onClick={() => {
                                     setIsApplyModalOpen(false);
                                     window.open(ad.application_url, '_blank', 'noopener,noreferrer');
                                 }}
-                                className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 transition-colors text-white font-bold shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                                disabled={isApplying}
+                                className="w-full py-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-medium transition-all"
                             >
-                                Devam Et
+                                Sadece Linke Git (Kaydetme)
+                            </button>
+
+                            {/* SEÇENEK 3: İPTAL */}
+                            <button
+                                onClick={() => setIsApplyModalOpen(false)}
+                                disabled={isApplying}
+                                className="w-full py-3 rounded-xl bg-transparent text-gray-500 hover:text-rose-400 transition-all mt-2 font-medium"
+                            >
+                                İptal
                             </button>
                         </div>
                     </div>
