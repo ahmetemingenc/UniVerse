@@ -58,7 +58,7 @@ export default function VerifyEduPage() {
         const token = localStorage.getItem('accessToken');
 
         try {
-            const response = await fetch('http://localhost:5000/api/user/sendEduVerification', {
+            const response = await fetch(`${API_URL}/api/user/sendEduVerification`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -90,7 +90,7 @@ export default function VerifyEduPage() {
         const token = localStorage.getItem('accessToken');
 
         try {
-            const response = await fetch('http://localhost:5000/api/user/verifyEduMail', {
+            const response = await fetch(`${API_URL}/api/user/verifyEduMail`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
