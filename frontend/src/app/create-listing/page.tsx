@@ -265,13 +265,22 @@ export default function CreateListingWizard() {
             let finalLocation = 'Kampüs İçi';
             if (city && district) {
                 finalLocation = `${district}, ${city}`;
-                if (generalLocation) finalLocation += ` | Harita: https://www.google.com/maps/search/?api=1&query=$${generalLocation.lat},${generalLocation.lng}`;
+                if (generalLocation) {
+                    finalLocation += ` | Harita: https://maps.google.com/?q=${generalLocation.lat},${generalLocation.lng}`;
+                }
             } else if (schemaType === 'carpooling') {
                 let o = formData.origin;
-                if (originCoords) o += ` (Harita: https://www.google.com/maps/search/?api=1&query=$${originCoords.lat},${originCoords.lng})`;
+                if (originCoords) {
+                    o += ` (Harita: https://maps.google.com/?q=${originCoords.lat},${originCoords.lng})`;
+                }
+
                 let d = formData.destination;
-                if (destCoords) d += ` (Harita: https://www.google.com/maps/search/?api=1&query=$${destCoords.lat},${destCoords.lng})`;
+                if (destCoords) {
+                    d += ` (Harita: https://maps.google.com/?q=${destCoords.lat},${destCoords.lng})`;
+                }
+
                 finalLocation = `${formData.origin} -> ${formData.destination}`;
+
                 submitData.append('origin', o);
                 submitData.append('destination', d);
                 submitData.append('departure_date', new Date(formData.departure_date).toISOString());
