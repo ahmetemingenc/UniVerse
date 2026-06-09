@@ -7,9 +7,8 @@ import {
     ChevronLeft, Heart, Share2, MessageSquare, MapPin, Calendar,
     User, ShieldCheck, Tag, Info, Loader2, Eye, AlertTriangle,
     Star, Send, Navigation, BookOpen, Briefcase, Link as LinkIcon,
-    ListPlus, Zap, Clock, GraduationCap
+    ListPlus, Clock, GraduationCap
 } from 'lucide-react';
-import CountdownTimer from "@/components/CountdownTimer";
 
 // a helper object for translating category types into Turkish
 const TYPE_MAP: Record<string, string> = {
@@ -18,8 +17,7 @@ const TYPE_MAP: Record<string, string> = {
     carpooling: 'Yol Arkadaşı',
     course: 'Özel Ders',
     job: 'İş / Staj',
-    scholarship: 'Burs',
-    emergency: 'Acil'
+    scholarship: 'Burs'
 };
 
 const fixEncodingAndFormat = (text: any) => {
@@ -44,16 +42,6 @@ export default function AdDetailPage() {
     const id = params.id as string;
 
     const [ad, setAd] = useState<any>(null);
-
-    const getExpiresAt = () => {
-        if (!ad || ad.type !== 'urgent' || !ad.expires || isNaN(Number(ad.expires))) return null;
-        const createdAt = new Date(ad.createdAt);
-        if (isNaN(createdAt.getTime())) return null;
-        return new Date(createdAt.getTime() + (Number(ad.expires) * 60 * 60 * 1000)).toISOString();
-    };
-
-    const expiresAt = getExpiresAt();
-
     const [isLoading, setIsLoading] = useState(true);
     const [isMockData, setIsMockData] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
@@ -98,6 +86,13 @@ export default function AdDetailPage() {
                     throw new Error(errData.message || 'İlan bulunamadı.');
                 }
                 const adData = await adResponse.json();
+
+                // Eğer yanlışlıkla bir acil ilan bu sayfada açılmaya çalışılırsa onu emergencies sayfasına yönlendirebilirsin (Opsiyonel Güvenlik)
+                if (adData.listing?.type === 'urgent') {
+                    router.replace(`/emergencies/${id}`);
+                    return;
+                }
+
                 setAd(adData.listing || adData.data || adData);
 
                 // 2. Favori Durumunu Kontrol Et
@@ -402,34 +397,9 @@ export default function AdDetailPage() {
                     {/* left area */}
                     <div className="lg:col-span-2 space-y-8">
 
-                        {ad.type === 'urgent' && expiresAt && (
-                            <div className="bg-rose-500/10 border border-rose-500/30 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between shadow-[0_0_30px_rgba(244,63,94,0.1)]">
-                                <div className="flex items-center gap-4 mb-4 md:mb-0">
-                                    <div className="p-4 bg-rose-500 rounded-2xl text-black animate-pulse">
-                                        <Zap size={32} fill="currentColor" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-black text-white">ACİL YARDIM ÇAĞRISI</h2>
-                                        <p className="text-rose-300 text-sm">Bu ilan kritik ihtiyaçlar içindir, lütfen hızlı aksiyon al.</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Kalan Süre</p>
-                                    <CountdownTimer
-                                        expiresAt={expiresAt}
-                                        onComplete={() => router.push('/feed')}
-                                    />
-                                </div>
-                            </div>
-                        )}
                         {/* images */}
                         <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden p-2">
                             <div className="aspect-[4/3] w-full rounded-2xl overflow-hidden bg-[#0B0F19] relative group flex items-center justify-center">
-                                {ad.is_urgent && (
-                                    <div className="absolute top-4 left-4 z-10 bg-rose-500 text-white text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-[0_0_20px_rgba(225,29,72,0.5)]">
-                                        <Zap size={14} /> Acil
-                                    </div>
-                                )}
                                 <img src={displayImages[activeImage]} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                             </div>
 
@@ -633,12 +603,8 @@ export default function AdDetailPage() {
 
                             <button
                                 onClick={handlePrimaryAction}
-                                className={`w-full py-4 rounded-2xl font-bold transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)] ${
-                                    ad.type === 'urgent'
-                                        ? 'bg-rose-600 text-white hover:bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]'
-                                        : 'bg-cyan-500 text-black hover:bg-cyan-400'
-                                }`}>
-                                {ad.type === 'urgent' ? 'Hemen Yardım Et' : (ad.type === 'job' || ad.type === 'scholarship' ? 'Hemen Başvur' : 'Mesaj Gönder')}
+                                className="w-full py-4 rounded-2xl font-bold transition-all bg-cyan-500 text-black hover:bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+                                {ad.type === 'job' || ad.type === 'scholarship' ? 'Hemen Başvur' : 'Mesaj Gönder'}
                             </button>
                         </div>
                     </div>

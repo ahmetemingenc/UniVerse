@@ -16,7 +16,7 @@ interface Advert {
     location: string;
     createdAt: string;
     photos?: string[];
-    is_urgent?: boolean;
+    type?: string;
 }
 
 const formatTime = (dateString: string) => {
@@ -80,11 +80,11 @@ export default function Home() {
                             ? baseData
                             : (baseData.listings || baseData.data || []);
 
-                        const trueUrgent = allListings.filter((l: Advert) => l.is_urgent);
-                        setUrgentListings(trueUrgent.length > 0 ? trueUrgent.slice(0, 6) : allListings.slice(0, 3));
+                        const trueUrgent = allListings.filter((l: Advert) => l.type === 'urgent');
+                        setUrgentListings(trueUrgent.slice(0, 6));
 
-                        const remaining = allListings.filter((l: Advert) => !l.is_urgent);
-                        setPopularListings(remaining.length > 0 ? remaining.slice(0, 6) : allListings.slice(3, 9));
+                        const remaining = allListings.filter((l: Advert) => l.type !== 'urgent');
+                        setPopularListings(remaining.slice(0, 6));
                     } else if (baseRes.status === 403) {
                         console.warn("[Güvenlik] 403 Forbidden: İlanları görüntüleme yetkiniz yok.");
                     } else {
@@ -189,7 +189,7 @@ export default function Home() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {urgentListings.map((item) => (
-                                            <div onClick={() => window.location.href=`/listings/${item._id}`} key={item._id} className="group bg-black/40 backdrop-blur-xl border border-rose-500/20 hover:border-rose-500/50 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)] flex flex-col cursor-pointer">
+                                            <div onClick={() => window.location.href=`/emergencies/${item._id}`} key={item._id} className="group bg-black/40 backdrop-blur-xl border border-rose-500/20 hover:border-rose-500/50 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)] flex flex-col cursor-pointer">
                                                 <div className="h-48 bg-gradient-to-br from-gray-900 to-black relative flex items-center justify-center overflow-hidden border-b border-rose-500/10">
                                                     {item.photos && item.photos.length > 0 ? (
                                                         <img src={item.photos[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
