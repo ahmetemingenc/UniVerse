@@ -66,17 +66,14 @@ export default function ProfilePage() {
                 setUserData(currentProfile);
 
                 // pull the listings
-                // 2. DÜZELTME: İLANLARI ÇEKERKEN API_URL ENTEGRE EDİLDİ
-                const listingsRes = await fetch(`${API_URL}/api/listing`, {
+                const listingsRes = await fetch(`${API_URL}/api/listing/my-listings`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const listingsData = await listingsRes.json();
+
                 if (listingsRes.ok) {
-                    const allListings = listingsData.listings || [];
-                    const userId = currentProfile._id;
-                    const filtered = allListings.filter((ad: any) => (ad.owner?._id || ad.owner) === userId);
-                    setMyAdverts(filtered);
+                    setMyAdverts(listingsData.listings || []);
                 }
 
             } catch (err: any) {
