@@ -287,7 +287,7 @@ export default function CreateListingWizard() {
                 submitData.append('available_seats', formData.available_seats);
             }
 
-            if (schemaType !== 'carpooling') submitData.append('location', finalLocation);
+            submitData.append('location', finalLocation);
 
             featuresList.forEach(feature => submitData.append(`features[${feature.key}]`, feature.value));
 
